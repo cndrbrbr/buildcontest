@@ -8,6 +8,7 @@ import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
+import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.model.Group;
 import org.bukkit.Material;
 import org.bukkit.command.Command;
@@ -36,11 +37,12 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private final GameStateManager gameStateManager;
     private final ScoreboardManager scoreboardManager;
     private final ScoreManager scoreManager;
+    private final WorldManager worldManager;
 
     public BuildContestCommand(BuildContestPlugin plugin, MainConfig mainConfig, ScoreConfig scoreConfig,
                                 GroupManager groupManager, PlotManager plotManager,
                                 GameStateManager gameStateManager, ScoreboardManager scoreboardManager,
-                                ScoreManager scoreManager) {
+                                ScoreManager scoreManager, WorldManager worldManager) {
         this.plugin = plugin;
         this.mainConfig = mainConfig;
         this.scoreConfig = scoreConfig;
@@ -49,6 +51,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         this.gameStateManager = gameStateManager;
         this.scoreboardManager = scoreboardManager;
         this.scoreManager = scoreManager;
+        this.worldManager = worldManager;
     }
 
     @Override
@@ -235,10 +238,17 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     }
 
     private boolean handleStart(CommandSender sender) {
+        sender.sendMessage("§eErzeuge frische Bauplatz-Welt mit zufälligem Seed, das kann einen Moment dauern...");
+        if (worldManager.regenerate().isEmpty()) {
+            sender.sendMessage("§cAbgebrochen: plots.world ist in config.yml auf die Server-Hauptwelt gesetzt. "
+                    + "Bitte dort eine andere, dedizierte Welt eintragen und /bc reload ausführen.");
+            return true;
+        }
+
         plotManager.generatePlots(groupManager.getGroups().values());
         gameStateManager.start();
         scoreboardManager.refreshAll();
-        sender.sendMessage("§aBuildcontest gestartet. Bauplätze wurden generiert und planiert.");
+        sender.sendMessage("§aBuildcontest gestartet. Neue Welt erzeugt, Bauplätze generiert und planiert.");
         return true;
     }
 

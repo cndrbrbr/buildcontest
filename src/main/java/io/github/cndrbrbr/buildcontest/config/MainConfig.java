@@ -60,7 +60,7 @@ public final class MainConfig {
         surfaceY = config.getInt("plots.surface-y", 64);
         centerX = config.getInt("plots.center-x", 0);
         centerZ = config.getInt("plots.center-z", 0);
-        worldName = config.getString("plots.world", "world");
+        worldName = config.getString("plots.world", "buildcontest_world");
 
         durationMinutes = config.getInt("game.duration-minutes", 0);
         autosaveMinutes = config.getInt("game.autosave-minutes", 5);

@@ -24,7 +24,12 @@ plots:
   # Mittelpunkt, um den die Bauplaetze verteilt werden
   center-x: 0
   center-z: 0
-  world: world
+  # Darf NICHT die Standard-Hauptwelt des Servers sein (aus server.properties
+  # level-name, i. d. R. "world")! Bukkit kann diese zur Laufzeit nicht
+  # entladen/neu erzeugen. /bc start loescht diese Welt bei jedem Lauf komplett
+  # und erzeugt sie mit einem zufaelligen Seed neu (siehe rules.md#setup-admin,
+  # "frische Welt"); dafuer muss es eine dedizierte, separate Welt sein.
+  world: buildcontest_world
 
 game:
   # Spieldauer in Minuten, 0 = kein automatisches Ende (nur /bc end)

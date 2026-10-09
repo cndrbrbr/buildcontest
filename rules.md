@@ -15,7 +15,7 @@ Vor Spielstart konfiguriert ein Admin:
 - Spieldauer (optional, siehe „Spielablauf & Ende")
 - Die Block-Punktetabelle (siehe „Punktesystem")
 
-Bauplätze werden automatisch im Weltraster verteilt, flach planiert (Vegetation entfernt, Oberfläche auf ein einheitliches Y-Level gebracht) und als rechteckige Grundfläche festgelegt.
+Beim Start (`/bc start`) wird die Bauplatz-Welt komplett neu mit einem zufälligen Seed erzeugt – ein frisches, normal generiertes Terrain für jeden Contest, keine Wiederverwendung alter Baureste. Erst danach werden die Bauplätze automatisch im Weltraster verteilt, flach planiert (Vegetation entfernt, Oberfläche auf ein einheitliches Y-Level gebracht) und als rechteckige Grundfläche festgelegt; der Rest der Welt bleibt unverändertes, natürliches Terrain.
 
 ## Gruppen
 

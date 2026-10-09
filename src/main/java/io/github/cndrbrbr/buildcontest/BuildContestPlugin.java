@@ -11,6 +11,7 @@ import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
+import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.persistence.DataStore;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitTask;
@@ -25,6 +26,7 @@ public final class BuildContestPlugin extends JavaPlugin {
     private ScoreManager scoreManager;
     private ScoreboardManager scoreboardManager;
     private GameStateManager gameStateManager;
+    private WorldManager worldManager;
     private DataStore dataStore;
     private BukkitTask autosaveTask;
 
@@ -40,6 +42,7 @@ public final class BuildContestPlugin extends JavaPlugin {
         scoreManager = new ScoreManager(scoreConfig);
         scoreboardManager = new ScoreboardManager(groupManager, scoreManager);
         gameStateManager = new GameStateManager(this, mainConfig);
+        worldManager = new WorldManager(this, mainConfig);
         dataStore = new DataStore(this, groupManager, plotManager, scoreManager, gameStateManager);
 
         if (dataStore.load()) {
@@ -56,7 +59,7 @@ public final class BuildContestPlugin extends JavaPlugin {
 
         BuildContestCommand command = new BuildContestCommand(
                 this, mainConfig, scoreConfig, groupManager, plotManager,
-                gameStateManager, scoreboardManager, scoreManager);
+                gameStateManager, scoreboardManager, scoreManager, worldManager);
         getCommand("bc").setExecutor(command);
         getCommand("bc").setTabCompleter(command);
 
@@ -123,5 +126,9 @@ public final class BuildContestPlugin extends JavaPlugin {
 
     public GameStateManager getGameStateManager() {
         return gameStateManager;
+    }
+
+    public WorldManager getWorldManager() {
+        return worldManager;
     }
 }
