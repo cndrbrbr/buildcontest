@@ -10,3 +10,9 @@ mvn package
 ```
 
 Die fertige Plugin-JAR liegt danach in `target/buildcontest-<version>.jar` und kann in den `plugins`-Ordner eines Spigot-Servers kopiert werden. Zum Kompilieren wird nur Internetzugriff auf das Spigot-Maven-Repository benötigt (keine lokale BuildTools-Installation); um damit tatsächlich einen Server zu **starten**, wird weiterhin eine mit `BuildTools.jar` erzeugte `spigot.jar` benötigt.
+
+`mvn package` führt dabei auch die Unit-Tests aus (JUnit 5 + Mockito, siehe `src/test/java`); nur mit `mvn test` laufen sie ohne JAR-Bau.
+
+## Persistenz
+
+Gruppenmitgliedschaft, Bauplätze, gewertete Blöcke und der Spielstatus werden zusätzlich zur Minecraft-Welt in `plugins/Buildcontest/data.yml` gesichert (siehe `persistence.DataStore`) – automatisch alle `game.autosave-minutes` (Standard 5 Minuten, `config.yml`) sowie beim sauberen Server-Stopp. Nach einem Neustart lädt das Plugin diesen Stand beim Aktivieren automatisch wieder, ein laufender Contest geht also nicht verloren.

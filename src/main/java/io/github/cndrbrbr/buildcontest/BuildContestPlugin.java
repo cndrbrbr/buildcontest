@@ -11,7 +11,9 @@ import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
+import io.github.cndrbrbr.buildcontest.persistence.DataStore;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.scheduler.BukkitTask;
 
 /** Siehe rules.md im Projekt-Root fuer die vollstaendige Spielbeschreibung. */
 public final class BuildContestPlugin extends JavaPlugin {
@@ -23,6 +25,8 @@ public final class BuildContestPlugin extends JavaPlugin {
     private ScoreManager scoreManager;
     private ScoreboardManager scoreboardManager;
     private GameStateManager gameStateManager;
+    private DataStore dataStore;
+    private BukkitTask autosaveTask;
 
     @Override
     public void onEnable() {
@@ -36,6 +40,12 @@ public final class BuildContestPlugin extends JavaPlugin {
         scoreManager = new ScoreManager(scoreConfig);
         scoreboardManager = new ScoreboardManager(groupManager, scoreManager);
         gameStateManager = new GameStateManager(this, mainConfig);
+        dataStore = new DataStore(this, groupManager, plotManager, scoreManager, gameStateManager);
+
+        if (dataStore.load()) {
+            getLogger().info("Gespeicherter Spielstand aus data.yml geladen.");
+        }
+        scheduleAutosave();
 
         getServer().getPluginManager().registerEvents(
                 new BlockListener(scoreManager, plotManager, gameStateManager, scoreboardManager), this);
@@ -55,10 +65,36 @@ public final class BuildContestPlugin extends JavaPlugin {
 
     @Override
     public void onDisable() {
+        if (autosaveTask != null) {
+            autosaveTask.cancel();
+            autosaveTask = null;
+        }
+        if (dataStore != null) {
+            dataStore.save();
+        }
         if (scoreboardManager != null) {
             scoreboardManager.clearAll();
         }
         getLogger().info("Buildcontest deaktiviert.");
+    }
+
+    /**
+     * Sichert den Spielstand regelmaessig zusaetzlich zum Speichern bei
+     * onDisable, damit ein Server-Absturz (kein sauberes onDisable) moeglichst
+     * wenig Fortschritt kostet (siehe persistence.DataStore,
+     * config.yml#game.autosave-minutes).
+     */
+    public void scheduleAutosave() {
+        if (autosaveTask != null) {
+            autosaveTask.cancel();
+            autosaveTask = null;
+        }
+        int minutes = mainConfig.getAutosaveMinutes();
+        if (minutes <= 0) {
+            return;
+        }
+        long ticks = minutes * 60L * 20L;
+        autosaveTask = getServer().getScheduler().runTaskTimer(this, dataStore::save, ticks, ticks);
     }
 
     public MainConfig getMainConfig() {

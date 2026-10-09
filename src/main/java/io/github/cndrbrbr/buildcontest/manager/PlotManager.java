@@ -9,19 +9,24 @@ import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 /**
  * Platzierung und Planierung der Bauplaetze (siehe rules.md#bauplaetze).
  *
- * Erste einfache Umsetzung: Bauplaetze werden in einer Reihe entlang der
- * X-Achse um den konfigurierten Mittelpunkt verteilt, jeweils mit dem
- * minimalen konfigurierten Abstand (min-distance) zueinander. max-distance
- * wird dadurch automatisch eingehalten, aber nicht aktiv genutzt - ein
- * rasterfoermiges oder zufaelliges Layout fuer sehr viele Gruppen ist eine
- * moegliche spaetere Erweiterung.
+ * Bauplaetze werden in einem moeglichst quadratischen 2D-Raster um den
+ * konfigurierten Mittelpunkt verteilt (Reihen x Spalten ~ sqrt(Anzahl)),
+ * jeweils mit dem konfigurierten min-distance als Abstand zwischen den
+ * Rasterzellen in beide Richtungen. Damit ist der tatsaechliche Abstand
+ * zwischen Baupaltz-Kanten konstant gleich min-distance <= max-distance,
+ * die konfigurierte Obergrenze wird also automatisch eingehalten; eine
+ * variable Ausnutzung der Spanne bis max-distance (z. B. zufaellig) ist
+ * eine moegliche spaetere Erweiterung, aber fuer die Kernanforderung
+ * ("Mindest-/Maximalabstand") nicht notwendig.
  */
 public final class PlotManager {
 
@@ -46,38 +51,65 @@ public final class PlotManager {
 
     /** Berechnet und planiert die Bauplaetze fuer alle uebergebenen Gruppen neu. */
     public void generatePlots(Iterable<Group> groups) {
-        plotsByGroup.clear();
-
-        int sizeX = mainConfig.getPlotSizeX();
-        int sizeZ = mainConfig.getPlotSizeZ();
-        int gap = mainConfig.getMinDistance();
-        String worldName = mainConfig.getWorldName();
-
-        int count = 0;
-        for (Group ignored : groups) {
-            count++;
-        }
-        if (count == 0) {
+        List<Group> groupList = new ArrayList<>();
+        groups.forEach(groupList::add);
+        if (groupList.isEmpty()) {
+            plotsByGroup.clear();
             return;
         }
 
-        int totalWidth = count * sizeX + (count - 1) * gap;
-        int startX = mainConfig.getCenterX() - totalWidth / 2;
-        int minZ = mainConfig.getCenterZ() - sizeZ / 2;
+        List<Plot> layout = computeGridLayout(
+                groupList.size(),
+                mainConfig.getPlotSizeX(), mainConfig.getPlotSizeZ(),
+                mainConfig.getMinDistance(),
+                mainConfig.getCenterX(), mainConfig.getCenterZ(),
+                mainConfig.getSurfaceY(), mainConfig.getWorldName());
 
-        int index = 0;
-        for (Group group : groups) {
-            int minX = startX + index * (sizeX + gap);
-            int maxX = minX + sizeX - 1;
-            int maxZ = minZ + sizeZ - 1;
-
-            Plot plot = new Plot(group.getId(), worldName, minX, minZ, maxX, maxZ, mainConfig.getSurfaceY());
+        plotsByGroup.clear();
+        for (int i = 0; i < groupList.size(); i++) {
+            Group group = groupList.get(i);
+            // computeGridLayout kennt keine Gruppen-IDs, also hier zuordnen.
+            Plot template = layout.get(i);
+            Plot plot = new Plot(group.getId(), template.getWorldName(),
+                    template.getMinX(), template.getMinZ(), template.getMaxX(), template.getMaxZ(),
+                    template.getSurfaceY());
             plotsByGroup.put(group.getId(), plot);
             group.setPlot(plot);
-
             flatten(plot);
-            index++;
         }
+    }
+
+    /**
+     * Reine Layout-Berechnung ohne Bukkit-Weltzugriff (daher gut unit-testbar):
+     * ordnet {@code count} gleich grosse Bauplaetze in einem moeglichst
+     * quadratischen Raster um den Mittelpunkt an, Kante-zu-Kante-Abstand
+     * {@code gap} in X- und Z-Richtung.
+     */
+    public static List<Plot> computeGridLayout(int count, int sizeX, int sizeZ, int gap,
+                                                int centerX, int centerZ, int surfaceY, String worldName) {
+        List<Plot> result = new ArrayList<>(count);
+        if (count <= 0) {
+            return result;
+        }
+
+        int cols = (int) Math.ceil(Math.sqrt(count));
+        int rows = (int) Math.ceil((double) count / cols);
+
+        int totalWidth = cols * sizeX + (cols - 1) * gap;
+        int totalDepth = rows * sizeZ + (rows - 1) * gap;
+        int startX = centerX - totalWidth / 2;
+        int startZ = centerZ - totalDepth / 2;
+
+        int index = 0;
+        for (int row = 0; row < rows && index < count; row++) {
+            for (int col = 0; col < cols && index < count; col++) {
+                int minX = startX + col * (sizeX + gap);
+                int minZ = startZ + row * (sizeZ + gap);
+                result.add(new Plot(0, worldName, minX, minZ, minX + sizeX - 1, minZ + sizeZ - 1, surfaceY));
+                index++;
+            }
+        }
+        return result;
     }
 
     private void flatten(Plot plot) {
@@ -106,5 +138,22 @@ public final class PlotManager {
                 }
             }
         }
+    }
+
+    /** Fuer die Persistenz (siehe persistence.DataStore): aktueller Stand ohne erneutes Planieren. */
+    public Map<Integer, Plot> exportPlots() {
+        return plotsByGroup;
+    }
+
+    /**
+     * Stellt Bauplaetze nach einem Neustart wieder her, OHNE sie erneut zu
+     * planieren - die Bloecke stehen ja bereits in der Welt (siehe
+     * persistence.DataStore). Verknuepft die Plots zusaetzlich mit den
+     * passenden Gruppen, damit z. B. Schutzmechanismen sofort wieder greifen.
+     */
+    public void importPlots(Map<Integer, Plot> plots, GroupManager groupManager) {
+        plotsByGroup.clear();
+        plotsByGroup.putAll(plots);
+        plots.forEach((groupId, plot) -> groupManager.getGroup(groupId).ifPresent(group -> group.setPlot(plot)));
     }
 }

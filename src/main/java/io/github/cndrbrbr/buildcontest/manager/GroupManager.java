@@ -4,8 +4,10 @@ import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import io.github.cndrbrbr.buildcontest.model.Group;
 
 import java.util.LinkedHashMap;
+import java.util.LinkedHashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /** Gruppenverwaltung: Mitgliedschaft und Zuweisungsmodus (siehe rules.md#gruppen). */
@@ -80,6 +82,33 @@ public final class GroupManager {
     public Optional<Integer> resolvePresetGroup(String playerName) {
         Integer groupId = mainConfig.getPresetAssignments().get(playerName.toLowerCase());
         return Optional.ofNullable(groupId);
+    }
+
+    /** Fuer die Persistenz (siehe persistence.DataStore): Gruppe -> Mitglieder. */
+    public Map<Integer, Set<UUID>> exportMembership() {
+        Map<Integer, Set<UUID>> export = new LinkedHashMap<>();
+        groups.forEach((id, group) -> export.put(id, new LinkedHashSet<>(group.getMembers())));
+        return export;
+    }
+
+    /**
+     * Stellt Gruppenmitgliedschaften nach einem Neustart wieder her. Muss nach
+     * {@link #rebuildGroups()} aufgerufen werden. Mitglieder von Gruppen, die
+     * es in der aktuellen Konfiguration nicht mehr gibt (z. B. Gruppenanzahl
+     * zwischenzeitlich verkleinert), werden stillschweigend verworfen.
+     */
+    public void importMembership(Map<Integer, Set<UUID>> membershipByGroup) {
+        membershipByGroup.forEach((groupId, playerIds) -> {
+            Group group = groups.get(groupId);
+            if (group == null) {
+                return;
+            }
+            for (UUID playerId : playerIds) {
+                if (group.addMember(playerId)) {
+                    membership.put(playerId, groupId);
+                }
+            }
+        });
     }
 
     public enum JoinResult {

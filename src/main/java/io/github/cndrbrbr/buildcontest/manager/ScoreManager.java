@@ -7,8 +7,10 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -101,5 +103,29 @@ public final class ScoreManager {
         }
         groupScores.merge(entry.groupId(), -entry.points(), Integer::sum);
         personalScores.merge(entry.placer(), -entry.points(), Integer::sum);
+    }
+
+    /** Ein gewerteter Block fuer den Export/Import ueber einen Neustart hinweg (siehe persistence.DataStore). */
+    public record Entry(BlockKey key, int groupId, UUID placer, int points) {
+    }
+
+    public List<Entry> exportEntries() {
+        List<Entry> entries = new ArrayList<>(scoredBlocks.size());
+        scoredBlocks.forEach((key, entry) -> entries.add(new Entry(key, entry.groupId(), entry.placer(), entry.points())));
+        return entries;
+    }
+
+    /**
+     * Fuellt den Zustand nach einem Neustart aus einer gespeicherten Liste
+     * wieder auf. Die Punktwerte werden dabei unveraendert aus der Datei
+     * uebernommen (nicht neu aus ScoreConfig abgeleitet), damit eine spaetere
+     * Config-Aenderung bereits gewertete Bestandsbloecke nicht rueckwirkend
+     * umbewertet.
+     */
+    public void importEntry(Entry entry) {
+        connectedByPlot.computeIfAbsent(entry.groupId(), id -> new HashSet<>()).add(entry.key());
+        scoredBlocks.put(entry.key(), new ScoredEntry(entry.groupId(), entry.placer(), entry.points()));
+        groupScores.merge(entry.groupId(), entry.points(), Integer::sum);
+        personalScores.merge(entry.placer(), entry.points(), Integer::sum);
     }
 }

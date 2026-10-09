@@ -29,3 +29,8 @@ plots:
 game:
   # Spieldauer in Minuten, 0 = kein automatisches Ende (nur /bc end)
   duration-minutes: 0
+  # Intervall in Minuten, in dem der Spielstand (Gruppen, Bauplaetze, Scores)
+  # zusaetzlich zum Speichern bei /reload bzw. Serverstop automatisch
+  # gesichert wird, damit ein Absturz moeglichst wenig Fortschritt kostet.
+  # 0 = deaktiviert.
+  autosave-minutes: 5

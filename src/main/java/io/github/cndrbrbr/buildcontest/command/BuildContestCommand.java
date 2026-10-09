@@ -256,6 +256,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private boolean handleReload(CommandSender sender) {
         mainConfig.reload();
         scoreConfig.reload();
+        plugin.scheduleAutosave();
         sender.sendMessage("§aKonfiguration neu geladen.");
         return true;
     }

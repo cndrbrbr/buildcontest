@@ -29,6 +29,7 @@ public final class MainConfig {
     private String worldName;
 
     private int durationMinutes;
+    private int autosaveMinutes;
 
     public MainConfig(BuildContestPlugin plugin) {
         this.plugin = plugin;
@@ -62,6 +63,7 @@ public final class MainConfig {
         worldName = config.getString("plots.world", "world");
 
         durationMinutes = config.getInt("game.duration-minutes", 0);
+        autosaveMinutes = config.getInt("game.autosave-minutes", 5);
     }
 
     public int getGroupCount() {
@@ -114,5 +116,10 @@ public final class MainConfig {
 
     public int getDurationMinutes() {
         return durationMinutes;
+    }
+
+    /** Intervall fuer das automatische Sichern des Spielstands, siehe persistence.DataStore. 0 = deaktiviert. */
+    public int getAutosaveMinutes() {
+        return autosaveMinutes;
     }
 }
