@@ -1,7 +1,7 @@
 # buildcontest
 Buildcontest game for minecraft spigot
 
-Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punktetabelle in [`scoreboard-config.yml`](./scoreboard-config.yml).
+Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punktetabelle in [`scoreboard-config.yml`](./scoreboard-config.yml). Praktische Anleitungen: [`ADMIN_GUIDE.md`](./ADMIN_GUIDE.md) für Server-Admins, [`PLAYER_GUIDE.md`](./PLAYER_GUIDE.md) für Spieler.
 
 ## Bauen
 
