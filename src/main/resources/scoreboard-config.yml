@@ -1,0 +1,422 @@
+# Buildcontest – Punktetabelle (Block -> Score)
+#
+# Tier-System (grob verdoppelnd, orientiert an der tatsaechlichen
+# Beschaffungs-/Verarbeitungskurve von Minecraft-Ressourcen):
+#
+#   T0 =  0  Punkte  -> funktionale Bloecke (Redstone-Komponenten, Workstations,
+#                       Container, Rails, ...) UND reine Dekoration (Teppich,
+#                       Banner, Schild, Bild, Blumentopf, Kerze, Laub, ...)
+#                       zaehlen GRUNDSAETZLICH 0, unabhaengig vom Materialwert
+#                       der Zutaten. Ausnahme: Beacon und Conduit (siehe T6),
+#                       da sie trotz "Funktion" extremen Ressourcenaufwand
+#                       repraesentieren.
+#   T1 =  1  Punkt   -> trivialer Rohstoff / Oberflaechenmaterial
+#   T2 =  3  Punkte  -> leichte Verarbeitung (Ofen/Stonecutter, haeufige Bloecke)
+#   T3 =  6  Punkte  -> moderate Seltenheit (Tiefbau-Standard, Nether/Ozean-Content)
+#   T4 =  12 Punkte  -> hohe Seltenheit (Edelressourcen roh bzw. Eisen/Gold-Bloecke)
+#   T5 =  25 Punkte  -> seltenste reguläre Bloecke (Diamant/Emerald-Ebene)
+#   T6 =  50 Punkte  -> Unikat-Cap: extrem seltene/einzigartige Bloecke
+#                       (Boss-Loot, Endgame-Crafting-Ketten). Diese Stufe ist
+#                       bewusst GEDECKELT - alle Eintraege hier sind gleich
+#                       viel wert, es gibt keine weitere Eskalation nach oben.
+#
+# Alles was hier nicht gelistet ist, zaehlt automatisch default_score (0).
+#
+# Formvarianten-Vererbung (spart tausende Einzelzeilen):
+# Folgende Suffixe/Praefixe eines gelisteten Basis-Materials erben automatisch
+# dessen Punktwert, da sie nur dieselbe Ressource in anderer Form sind:
+#   _STAIRS, _SLAB, _WALL, _FENCE, _FENCE_GATE, _DOOR, _TRAPDOOR,
+#   STRIPPED_-Praefix, _WOOD-Suffix (z. B. STRIPPED_OAK_WOOD -> wie OAK_LOG)
+# AUSGENOMMEN von der Vererbung (bleiben immer 0, da funktional/informativ):
+#   _BUTTON, _PRESSURE_PLATE, _SIGN, _HANGING_SIGN, _BOAT, _BED
+#
+# Nicht gelistete Sonderfaelle (bleiben auf 0 / sind nicht survival-relevant):
+#   BEDROCK, BARRIER, COMMAND_BLOCK*, STRUCTURE_BLOCK, STRUCTURE_VOID, JIGSAW,
+#   LIGHT, SPAWNER, END_PORTAL_FRAME, END_PORTAL, END_GATEWAY, NETHER_PORTAL,
+#   WATER, LAVA, FIRE, AIR, CAVE_AIR, VOID_AIR, MOVING_PISTON,
+#   SCULK_VEIN, AMETHYST_CLUSTER/BUD (nicht ohne Silk Touch bewegbar),
+#   alle Redstone-Komponenten, Workstations (Crafting Table, Oefen, Anvil,
+#   Enchanting Table, Brewing Stand, Grindstone, Loom, ...), Container
+#   (Chest, Barrel, Ender Chest, Hopper, Dispenser, Dropper), Rails,
+#   Note Block, Jukebox, Daylight Detector, Target, Lectern
+
+default_score: 0
+
+tiers:
+  T0: 0
+  T1: 1
+  T2: 3
+  T3: 6
+  T4: 12
+  T5: 25
+  T6_unique_cap: 50
+
+scores:
+
+  # ===================== TIER 1 (1 Punkt) =====================
+  # Triviale Rohstoffe / Oberflaechenmaterial, minimaler Farmaufwand
+
+  DIRT: 1
+  GRASS_BLOCK: 1
+  COARSE_DIRT: 1
+  ROOTED_DIRT: 1
+  FARMLAND: 1
+  SAND: 1
+  RED_SAND: 1
+  GRAVEL: 1
+  CLAY: 1
+  STONE: 1
+  COBBLESTONE: 1
+  MOSSY_COBBLESTONE: 1
+  ANDESITE: 1
+  DIORITE: 1
+  GRANITE: 1
+  DEEPSLATE: 1
+  COBBLED_DEEPSLATE: 1
+  SANDSTONE: 1
+  RED_SANDSTONE: 1
+  NETHERRACK: 1
+  BASALT: 1
+  BLACKSTONE: 1
+  ICE: 1
+  SNOW_BLOCK: 1
+  MYCELIUM: 1
+  PODZOL: 1
+  MOSS_BLOCK: 1
+  MUD: 1
+  PACKED_MUD: 1
+  BAMBOO_BLOCK: 1
+  BAMBOO_PLANKS: 1
+  BAMBOO_MOSAIC: 1
+  CALCITE: 1
+  TUFF: 1
+  POINTED_DRIPSTONE: 1
+  LANTERN: 1
+  CHAIN: 1
+  BEEHIVE: 1
+
+  # -- Erze: extrem haeufig / minimaler Aufwand --
+  COAL_ORE: 1
+  DEEPSLATE_COAL_ORE: 1
+  COPPER_ORE: 1
+  DEEPSLATE_COPPER_ORE: 1
+  NETHER_GOLD_ORE: 1
+  NETHER_QUARTZ_ORE: 1
+
+  # -- Wolle (alle 16 Farben) --
+  WHITE_WOOL: 1
+  ORANGE_WOOL: 1
+  MAGENTA_WOOL: 1
+  LIGHT_BLUE_WOOL: 1
+  YELLOW_WOOL: 1
+  LIME_WOOL: 1
+  PINK_WOOL: 1
+  GRAY_WOOL: 1
+  LIGHT_GRAY_WOOL: 1
+  CYAN_WOOL: 1
+  PURPLE_WOOL: 1
+  BLUE_WOOL: 1
+  BROWN_WOOL: 1
+  GREEN_WOOL: 1
+  RED_WOOL: 1
+  BLACK_WOOL: 1
+
+  # -- Terracotta (alle 16 Farben) --
+  TERRACOTTA: 1
+  WHITE_TERRACOTTA: 1
+  ORANGE_TERRACOTTA: 1
+  MAGENTA_TERRACOTTA: 1
+  LIGHT_BLUE_TERRACOTTA: 1
+  YELLOW_TERRACOTTA: 1
+  LIME_TERRACOTTA: 1
+  PINK_TERRACOTTA: 1
+  GRAY_TERRACOTTA: 1
+  LIGHT_GRAY_TERRACOTTA: 1
+  CYAN_TERRACOTTA: 1
+  PURPLE_TERRACOTTA: 1
+  BLUE_TERRACOTTA: 1
+  BROWN_TERRACOTTA: 1
+  GREEN_TERRACOTTA: 1
+  RED_TERRACOTTA: 1
+  BLACK_TERRACOTTA: 1
+
+  # -- Holz (Log/Planks; STRIPPED_*, *_WOOD erben automatisch) --
+  OAK_LOG: 1
+  OAK_PLANKS: 1
+  SPRUCE_LOG: 1
+  SPRUCE_PLANKS: 1
+  BIRCH_LOG: 1
+  BIRCH_PLANKS: 1
+  JUNGLE_LOG: 1
+  JUNGLE_PLANKS: 1
+  ACACIA_LOG: 1
+  ACACIA_PLANKS: 1
+  DARK_OAK_LOG: 1
+  DARK_OAK_PLANKS: 1
+  MANGROVE_LOG: 1
+  MANGROVE_PLANKS: 1
+  CHERRY_LOG: 1
+  CHERRY_PLANKS: 1
+  PALE_OAK_LOG: 1
+  PALE_OAK_PLANKS: 1
+  CRIMSON_STEM: 1
+  CRIMSON_PLANKS: 1
+  WARPED_STEM: 1
+  WARPED_PLANKS: 1
+
+  # ===================== TIER 2 (3 Punkte) =====================
+  # Leichte Verarbeitung (Ofen/Stonecutter) oder haeufige Nether-/Deko-Bloecke
+
+  STONE_BRICKS: 3
+  CHISELED_STONE_BRICKS: 3
+  CRACKED_STONE_BRICKS: 3
+  MOSSY_STONE_BRICKS: 3
+  BRICKS: 3
+  NETHER_BRICKS: 3
+  RED_NETHER_BRICKS: 3
+  CHISELED_NETHER_BRICKS: 3
+  CRACKED_NETHER_BRICKS: 3
+  POLISHED_ANDESITE: 3
+  POLISHED_DIORITE: 3
+  POLISHED_GRANITE: 3
+  SMOOTH_SANDSTONE: 3
+  CUT_SANDSTONE: 3
+  CHISELED_SANDSTONE: 3
+  SMOOTH_RED_SANDSTONE: 3
+  CUT_RED_SANDSTONE: 3
+  CHISELED_RED_SANDSTONE: 3
+  POLISHED_BASALT: 3
+  SMOOTH_BASALT: 3
+  POLISHED_BLACKSTONE: 3
+  POLISHED_BLACKSTONE_BRICKS: 3
+  CHISELED_POLISHED_BLACKSTONE: 3
+  POLISHED_DEEPSLATE: 3
+  DEEPSLATE_BRICKS: 3
+  DEEPSLATE_TILES: 3
+  CHISELED_DEEPSLATE: 3
+  CRACKED_DEEPSLATE_BRICKS: 3
+  CRACKED_DEEPSLATE_TILES: 3
+  POLISHED_TUFF: 3
+  TUFF_BRICKS: 3
+  CHISELED_TUFF: 3
+  CHISELED_TUFF_BRICKS: 3
+  QUARTZ_BLOCK: 3
+  SMOOTH_QUARTZ: 3
+  CHISELED_QUARTZ_BLOCK: 3
+  QUARTZ_PILLAR: 3
+  QUARTZ_BRICKS: 3
+  HONEYCOMB_BLOCK: 3
+  BONE_BLOCK: 3
+  PACKED_ICE: 3
+  SHROOMLIGHT: 3
+  CRIMSON_NYLIUM: 3
+  WARPED_NYLIUM: 3
+  SOUL_SAND: 3
+  SOUL_SOIL: 3
+  MAGMA_BLOCK: 3
+  GLOWSTONE: 3
+  NETHER_WART_BLOCK: 3
+  WARPED_WART_BLOCK: 3
+  BEE_NEST: 3
+  MUD_BRICKS: 3
+  RESIN_BLOCK: 3
+  RESIN_BRICKS: 3
+  CHISELED_RESIN_BRICKS: 3
+  DRIPSTONE_BLOCK: 3
+  CHORUS_PLANT: 3
+  PURPUR_BLOCK: 3
+  PURPUR_PILLAR: 3
+  END_STONE: 3
+  END_STONE_BRICKS: 3
+  OBSIDIAN: 3
+  BELL: 3
+
+  # -- Glas (klar + 16 Farben) --
+  GLASS: 3
+  WHITE_STAINED_GLASS: 3
+  ORANGE_STAINED_GLASS: 3
+  MAGENTA_STAINED_GLASS: 3
+  LIGHT_BLUE_STAINED_GLASS: 3
+  YELLOW_STAINED_GLASS: 3
+  LIME_STAINED_GLASS: 3
+  PINK_STAINED_GLASS: 3
+  GRAY_STAINED_GLASS: 3
+  LIGHT_GRAY_STAINED_GLASS: 3
+  CYAN_STAINED_GLASS: 3
+  PURPLE_STAINED_GLASS: 3
+  BLUE_STAINED_GLASS: 3
+  BROWN_STAINED_GLASS: 3
+  GREEN_STAINED_GLASS: 3
+  RED_STAINED_GLASS: 3
+  BLACK_STAINED_GLASS: 3
+
+  # -- Beton (16 Farben) --
+  WHITE_CONCRETE: 3
+  ORANGE_CONCRETE: 3
+  MAGENTA_CONCRETE: 3
+  LIGHT_BLUE_CONCRETE: 3
+  YELLOW_CONCRETE: 3
+  LIME_CONCRETE: 3
+  PINK_CONCRETE: 3
+  GRAY_CONCRETE: 3
+  LIGHT_GRAY_CONCRETE: 3
+  CYAN_CONCRETE: 3
+  PURPLE_CONCRETE: 3
+  BLUE_CONCRETE: 3
+  BROWN_CONCRETE: 3
+  GREEN_CONCRETE: 3
+  RED_CONCRETE: 3
+  BLACK_CONCRETE: 3
+
+  # -- Beton-Pulver (16 Farben) --
+  WHITE_CONCRETE_POWDER: 3
+  ORANGE_CONCRETE_POWDER: 3
+  MAGENTA_CONCRETE_POWDER: 3
+  LIGHT_BLUE_CONCRETE_POWDER: 3
+  YELLOW_CONCRETE_POWDER: 3
+  LIME_CONCRETE_POWDER: 3
+  PINK_CONCRETE_POWDER: 3
+  GRAY_CONCRETE_POWDER: 3
+  LIGHT_GRAY_CONCRETE_POWDER: 3
+  CYAN_CONCRETE_POWDER: 3
+  PURPLE_CONCRETE_POWDER: 3
+  BLUE_CONCRETE_POWDER: 3
+  BROWN_CONCRETE_POWDER: 3
+  GREEN_CONCRETE_POWDER: 3
+  RED_CONCRETE_POWDER: 3
+  BLACK_CONCRETE_POWDER: 3
+
+  # -- Glasierte Terracotta (16 Farben) --
+  WHITE_GLAZED_TERRACOTTA: 3
+  ORANGE_GLAZED_TERRACOTTA: 3
+  MAGENTA_GLAZED_TERRACOTTA: 3
+  LIGHT_BLUE_GLAZED_TERRACOTTA: 3
+  YELLOW_GLAZED_TERRACOTTA: 3
+  LIME_GLAZED_TERRACOTTA: 3
+  PINK_GLAZED_TERRACOTTA: 3
+  GRAY_GLAZED_TERRACOTTA: 3
+  LIGHT_GRAY_GLAZED_TERRACOTTA: 3
+  CYAN_GLAZED_TERRACOTTA: 3
+  PURPLE_GLAZED_TERRACOTTA: 3
+  BLUE_GLAZED_TERRACOTTA: 3
+  BROWN_GLAZED_TERRACOTTA: 3
+  GREEN_GLAZED_TERRACOTTA: 3
+  RED_GLAZED_TERRACOTTA: 3
+  BLACK_GLAZED_TERRACOTTA: 3
+
+  # -- Korallenbloecke (lebend + tot, alle 5 Typen) --
+  TUBE_CORAL_BLOCK: 3
+  BRAIN_CORAL_BLOCK: 3
+  BUBBLE_CORAL_BLOCK: 3
+  FIRE_CORAL_BLOCK: 3
+  HORN_CORAL_BLOCK: 3
+  DEAD_TUBE_CORAL_BLOCK: 3
+  DEAD_BRAIN_CORAL_BLOCK: 3
+  DEAD_BUBBLE_CORAL_BLOCK: 3
+  DEAD_FIRE_CORAL_BLOCK: 3
+  DEAD_HORN_CORAL_BLOCK: 3
+
+  # -- Kupfer-Familie (alle Oxidationsstufen + gewachst + Varianten) --
+  COPPER_BLOCK: 3
+  EXPOSED_COPPER: 3
+  WEATHERED_COPPER: 3
+  OXIDIZED_COPPER: 3
+  WAXED_COPPER_BLOCK: 3
+  WAXED_EXPOSED_COPPER: 3
+  WAXED_WEATHERED_COPPER: 3
+  WAXED_OXIDIZED_COPPER: 3
+  RAW_COPPER_BLOCK: 3
+  CUT_COPPER: 3
+  EXPOSED_CUT_COPPER: 3
+  WEATHERED_CUT_COPPER: 3
+  OXIDIZED_CUT_COPPER: 3
+  CHISELED_COPPER: 3
+  EXPOSED_CHISELED_COPPER: 3
+  WEATHERED_CHISELED_COPPER: 3
+  OXIDIZED_CHISELED_COPPER: 3
+  COPPER_GRATE: 3
+  EXPOSED_COPPER_GRATE: 3
+  WEATHERED_COPPER_GRATE: 3
+  OXIDIZED_COPPER_GRATE: 3
+  COPPER_BULB: 3
+  EXPOSED_COPPER_BULB: 3
+  WEATHERED_COPPER_BULB: 3
+  OXIDIZED_COPPER_BULB: 3
+  COAL_BLOCK: 3
+
+  # ===================== TIER 3 (6 Punkte) =====================
+  # Moderate Seltenheit: Tiefbau-Standard, Ozean-/Nether-Bossgebiete
+
+  IRON_ORE: 6
+  DEEPSLATE_IRON_ORE: 6
+  REDSTONE_ORE: 6
+  DEEPSLATE_REDSTONE_ORE: 6
+  LAPIS_ORE: 6
+  DEEPSLATE_LAPIS_ORE: 6
+  IRON_BLOCK: 6
+  RAW_IRON_BLOCK: 6
+  REDSTONE_BLOCK: 6
+  LAPIS_BLOCK: 6
+  PRISMARINE: 6
+  PRISMARINE_BRICKS: 6
+  DARK_PRISMARINE: 6
+  SEA_LANTERN: 6
+  SPONGE: 6
+  WET_SPONGE: 6
+  AMETHYST_BLOCK: 6
+  TINTED_GLASS: 6
+  GILDED_BLACKSTONE: 6
+  CRYING_OBSIDIAN: 6
+  SCULK: 6
+  SCULK_SENSOR: 6
+  BLUE_ICE: 6
+
+  # ===================== TIER 4 (12 Punkte) =====================
+  # Hohe Seltenheit: Endgame-Erze roh, mehrstufige Mob-Farmen
+
+  GOLD_ORE: 12
+  DEEPSLATE_GOLD_ORE: 12
+  GOLD_BLOCK: 12
+  RAW_GOLD_BLOCK: 12
+  DIAMOND_ORE: 12
+  DEEPSLATE_DIAMOND_ORE: 12
+  EMERALD_ORE: 12
+  DEEPSLATE_EMERALD_ORE: 12
+  SCULK_CATALYST: 12
+  SCULK_SHRIEKER: 12
+  OCHRE_FROGLIGHT: 12
+  VERDANT_FROGLIGHT: 12
+  PEARLESCENT_FROGLIGHT: 12
+
+  # ===================== TIER 5 (25 Punkte) =====================
+  # Seltenste reguläre Bloecke
+
+  DIAMOND_BLOCK: 25
+  EMERALD_BLOCK: 25
+  ANCIENT_DEBRIS: 25
+
+  # ================= TIER 6 - UNIKAT-CAP (50 Punkte) =================
+  # Extrem seltene/einzigartige Bloecke, bewusst gedeckelt auf einen
+  # gemeinsamen Maximalwert (keine weitere Eskalation untereinander)
+
+  NETHERITE_BLOCK: 50
+  BEACON: 50
+  CONDUIT: 50
+  DRAGON_EGG: 50
+  SHULKER_BOX: 50
+  WHITE_SHULKER_BOX: 50
+  ORANGE_SHULKER_BOX: 50
+  MAGENTA_SHULKER_BOX: 50
+  LIGHT_BLUE_SHULKER_BOX: 50
+  YELLOW_SHULKER_BOX: 50
+  LIME_SHULKER_BOX: 50
+  PINK_SHULKER_BOX: 50
+  GRAY_SHULKER_BOX: 50
+  LIGHT_GRAY_SHULKER_BOX: 50
+  CYAN_SHULKER_BOX: 50
+  PURPLE_SHULKER_BOX: 50
+  BLUE_SHULKER_BOX: 50
+  BROWN_SHULKER_BOX: 50
+  GREEN_SHULKER_BOX: 50
+  RED_SHULKER_BOX: 50
+  BLACK_SHULKER_BOX: 50
