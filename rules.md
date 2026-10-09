@@ -57,7 +57,19 @@ Zusätzliche Regeln:
 - Alles, was nicht in `scoreboard-config.yml` gelistet ist, zählt automatisch 0 Punkte (`default_score`).
 - Der Punktestand einer Gruppe entspricht der Summe der Punktwerte **aktuell stehender** gewerteter Blöcke auf ihrem Bauplatz – nicht einer kumulativen Zählung aller jemals platzierten Blöcke.
 - Wird ein gewerteter Block abgebaut, wird sein Punktwert wieder vom Gruppen-Score abgezogen. Das verhindert, dass durch wiederholtes Platzieren/Abbauen desselben Blocks unbegrenzt Punkte erzeugt werden.
-- Der Punktestand aller Gruppen wird live in einem Scoreboard angezeigt (sortiert nach Rang).
+
+## Scoreboard-Anzeige
+
+Jeder Spieler sieht permanent ein Sidebar-Scoreboard mit zwei Informationen:
+
+- **Punktestand aller Gruppen**, sortiert nach Rang – für jeden Spieler identisch, unabhängig von der eigenen Gruppe.
+- **Eigener Beitrag**: wie viele der Punkte seiner Gruppe der Spieler selbst erzielt hat.
+
+Dazu wird pro platziertem gewerteten Block gespeichert, welcher Spieler ihn platziert hat. Der persönliche Beitrag entspricht – analog zum Gruppen-Score – der Summe der Punktwerte der **aktuell stehenden** Blöcke, die dieser Spieler selbst platziert hat:
+
+- Baut irgendjemand einen gewerteten Block ab, verliert **der ursprüngliche Platzierer** diesen Punktwert aus seinem persönlichen Beitrag (nicht der Abbauende).
+- Daraus folgt die Invariante: Summe der persönlichen Beiträge aller Mitglieder einer Gruppe = Gruppen-Score.
+- Platziert ein Teammitglied an derselben Stelle einen neuen Block, geht der Beitrag auf diesen neuen Platzierer über. Da Teammitglieder sich gegenseitig nicht vor Abbau geschützt sind (siehe „Schutzmechanismen"), kann so theoretisch Beitrag zwischen Mitgliedern „umverteilt" werden – das ist eine bewusst akzeptierte Einschränkung des bestehenden Vertrauensmodells innerhalb der Gruppe, kein Exploit gegenüber anderen Gruppen.
 
 ## Schutzmechanismen
 
