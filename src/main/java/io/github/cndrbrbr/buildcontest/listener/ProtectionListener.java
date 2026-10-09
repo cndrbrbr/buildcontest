@@ -11,18 +11,22 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockBurnEvent;
+import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.entity.EntityExplodeEvent;
 
 import java.util.Iterator;
+import java.util.List;
 import java.util.Optional;
 
 /**
  * Schutzmechanismen (siehe rules.md#schutzmechanismen): Blöcke auf einem Bauplatz
  * können nicht von Spielern anderer Gruppen abgebaut oder überbaut werden; Explosionen
- * und Feuerausbreitung werden an Bauplatzgrenzen generell unterbunden - auch gegenüber
- * der eigenen Gruppe. Innerhalb der eigenen Gruppe gibt es bewusst keinen Schutz.
+ * (sowohl von Entities wie TNT/Creeper als auch entity-lose Explosionen wie Betten
+ * und Respawn-Anker) und Feuerausbreitung werden an Bauplatzgrenzen generell
+ * unterbunden - auch gegenüber der eigenen Gruppe. Innerhalb der eigenen Gruppe
+ * gibt es bewusst keinen Schutz.
  */
 public final class ProtectionListener implements Listener {
 
@@ -54,7 +58,22 @@ public final class ProtectionListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onExplode(EntityExplodeEvent event) {
-        Iterator<Block> iterator = event.blockList().iterator();
+        removePlotBlocks(event.blockList());
+    }
+
+    /**
+     * Betten und Respawn-Anker explodieren ohne zugehoerige Entity (z. B. im
+     * falschen Dimensionstyp) und feuern deshalb BlockExplodeEvent statt
+     * EntityExplodeEvent - ohne diesen Handler waeren Bauplaetze dagegen
+     * ungeschuetzt (siehe rules.md#schutzmechanismen, "Betten").
+     */
+    @EventHandler(priority = EventPriority.LOWEST)
+    public void onBlockExplode(BlockExplodeEvent event) {
+        removePlotBlocks(event.blockList());
+    }
+
+    private void removePlotBlocks(List<Block> blocks) {
+        Iterator<Block> iterator = blocks.iterator();
         while (iterator.hasNext()) {
             Block block = iterator.next();
             if (plotManager.getPlotAt(block.getWorld().getName(), block.getX(), block.getZ()).isPresent()) {
