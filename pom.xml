@@ -13,12 +13,12 @@
     <description>Survival-Buildcontest-Plugin fuer Spigot, siehe rules.md.</description>
 
     <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
+        <maven.compiler.source>25</maven.compiler.source>
+        <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <spigot.version>1.21.4-R0.1-SNAPSHOT</spigot.version>
+        <spigot.version>26.3-R0.1-SNAPSHOT</spigot.version>
         <junit.version>5.11.3</junit.version>
-        <mockito.version>5.14.2</mockito.version>
+        <mockito.version>5.18.0</mockito.version>
     </properties>
 
     <repositories>

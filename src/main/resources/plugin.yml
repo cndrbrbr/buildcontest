@@ -1,7 +1,7 @@
 name: BuildContest
 version: ${project.version}
 main: io.github.cndrbrbr.buildcontest.BuildContestPlugin
-api-version: '1.21'
+api-version: '26.3'
 author: cndrbrbr
 description: Survival-Buildcontest zwischen mehreren Gruppen mit Punktesystem nach Farm-Schwierigkeitsgrad.
 

@@ -5,11 +5,13 @@ Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punkt
 
 ## Bauen
 
+Benötigt JDK 25 (von Paper 26.3 vorausgesetzt, siehe `pom.xml`).
+
 ```
 mvn package
 ```
 
-Die fertige Plugin-JAR liegt danach in `target/buildcontest-<version>.jar` und kann in den `plugins`-Ordner eines Spigot-Servers kopiert werden. Zum Kompilieren wird nur Internetzugriff auf das Spigot-Maven-Repository benötigt (keine lokale BuildTools-Installation); um damit tatsächlich einen Server zu **starten**, wird weiterhin eine mit `BuildTools.jar` erzeugte `spigot.jar` benötigt.
+Die fertige Plugin-JAR liegt danach in `target/buildcontest-<version>.jar` und kann in den `plugins`-Ordner eines Spigot-/Paper-Servers (Minecraft 26.3) kopiert werden. Zum Kompilieren wird nur Internetzugriff auf das Spigot-Maven-Repository benötigt (keine lokale BuildTools-Installation); um damit tatsächlich einen Server zu **starten**, wird weiterhin eine mit `BuildTools.jar` erzeugte `spigot.jar` (oder einfacher: ein Paper-26.3-Server-Jar) benötigt.
 
 `mvn package` führt dabei auch die Unit-Tests aus (JUnit 5 + Mockito, siehe `src/test/java`); nur mit `mvn test` laufen sie ohne JAR-Bau.
 
