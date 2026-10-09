@@ -1,0 +1,31 @@
+# Buildcontest - Grundkonfiguration
+# Siehe rules.md im Projekt-Root fuer die vollstaendige Spielbeschreibung.
+# Die Punktetabelle liegt separat in scoreboard-config.yml.
+
+groups:
+  count: 2
+  max-size: 5
+  # Zuweisungsmodus: FREE (Spieler waehlen per /bc join) oder CONFIG (siehe assignments)
+  # Nicht gemischt - siehe rules.md#gruppen.
+  assignment-mode: FREE
+  # Nur relevant wenn assignment-mode: CONFIG
+  # Minecraft-Namen -> Gruppennummer (1-basiert)
+  assignments: {}
+    # Alex: 1
+    # Notch: 2
+
+plots:
+  size-x: 60
+  size-z: 60
+  min-distance: 200
+  max-distance: 500
+  # Y-Level, auf das die Bauplaetze planiert werden
+  surface-y: 64
+  # Mittelpunkt, um den die Bauplaetze verteilt werden
+  center-x: 0
+  center-z: 0
+  world: world
+
+game:
+  # Spieldauer in Minuten, 0 = kein automatisches Ende (nur /bc end)
+  duration-minutes: 0

@@ -1,0 +1,20 @@
+name: BuildContest
+version: ${project.version}
+main: io.github.cndrbrbr.buildcontest.BuildContestPlugin
+api-version: '1.21'
+author: cndrbrbr
+description: Survival-Buildcontest zwischen mehreren Gruppen mit Punktesystem nach Farm-Schwierigkeitsgrad.
+
+commands:
+  bc:
+    description: Buildcontest-Hauptbefehl
+    usage: /<command> <join|setgroups|setgroupsize|setplotsize|setdistance|setscore|assign|start|end|reload>
+    permission: buildcontest.use
+
+permissions:
+  buildcontest.use:
+    description: Erlaubt die Nutzung von /bc join
+    default: true
+  buildcontest.admin:
+    description: Erlaubt alle Admin-Unterbefehle von /bc
+    default: op
