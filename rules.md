@@ -38,17 +38,23 @@ Bauplätze werden automatisch im Weltraster verteilt, flach planiert (Vegetation
 
 ## Punktesystem
 
-- Jeder Blocktyp hat einen Punktwert, der sich am Beschaffungsaufwand orientiert (seltener/aufwendiger zu farmen = mehr Punkte). Die Tabelle ist admin-konfigurierbar; Beispiel:
+Jeder Blocktyp hat einen Punktwert, der sich am Beschaffungs-/Verarbeitungsaufwand orientiert (seltener/aufwendiger zu farmen = mehr Punkte). Die vollständige, admin-konfigurierbare Tabelle liegt in [`scoreboard-config.yml`](./scoreboard-config.yml). Sie folgt einem siebenstufigen, grob verdoppelnden Tier-System:
 
-  | Block | Punkte |
-  |---|---|
-  | Stein / Erdblöcke | 1 |
-  | Holz / Sandstein | 2 |
-  | Eisenblock | 10 |
-  | Goldblock | 15 |
-  | Diamantblock | 50 |
-  | Netheritblock | 100 |
+| Tier | Punkte | Beispiele |
+|---|---|---|
+| T0 | 0 | Funktionale Blöcke (Redstone-Komponenten, Workstations, Container, Rails) und reine Dekoration (Teppich, Banner, Schild, Laub). Zählen grundsätzlich nicht, unabhängig vom Materialwert – Ausnahme: Beacon/Conduit (siehe T6) |
+| T1 | 1 | Erde, Sand, Stein, Holz, Wolle, Terracotta, Coal/Copper-Erz |
+| T2 | 3 | Steinziegel, Beton, Glas, Quarzblock, Kupfer-Block, Coal-Block, Obsidian |
+| T3 | 6 | Eisenerz/-block, Redstone-/Lapis-Erz/-block, Prismarine, Amethystblock |
+| T4 | 12 | Golderz/-block, Diamant-/Smaragderz (unverarbeitet), Froglight |
+| T5 | 25 | Diamantblock, Smaragdblock, Ancient Debris |
+| T6 (Cap) | 50 | Netheritblock, Beacon, Conduit, Dragon Egg, Shulker Box – bewusst gedeckelt, keine weitere Eskalation untereinander |
 
+Zusätzliche Regeln:
+
+- Natürliche Erz-Rohblöcke (z. B. Diamanterz direkt aus dem Abbau) zählen niedriger als der daraus hergestellte kompakte Block (z. B. Diamantblock) – weniger Aufwand als 9 Einheiten zu sammeln und zu verarbeiten.
+- Formvarianten (Stufen, Treppen, Wände, Zäune, Tore, Türen, Fallen) erben automatisch den Punktwert ihres Grundmaterials. Rein funktionale/informative Varianten (Knöpfe, Druckplatten, Schilder) bleiben immer bei 0 Punkten.
+- Alles, was nicht in `scoreboard-config.yml` gelistet ist, zählt automatisch 0 Punkte (`default_score`).
 - Der Punktestand einer Gruppe entspricht der Summe der Punktwerte **aktuell stehender** gewerteter Blöcke auf ihrem Bauplatz – nicht einer kumulativen Zählung aller jemals platzierten Blöcke.
 - Wird ein gewerteter Block abgebaut, wird sein Punktwert wieder vom Gruppen-Score abgezogen. Das verhindert, dass durch wiederholtes Platzieren/Abbauen desselben Blocks unbegrenzt Punkte erzeugt werden.
 - Der Punktestand aller Gruppen wird live in einem Scoreboard angezeigt (sortiert nach Rang).
