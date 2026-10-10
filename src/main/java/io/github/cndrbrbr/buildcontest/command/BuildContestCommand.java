@@ -3,6 +3,7 @@ package io.github.cndrbrbr.buildcontest.command;
 import io.github.cndrbrbr.buildcontest.BuildContestPlugin;
 import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import io.github.cndrbrbr.buildcontest.config.ScoreConfig;
+import io.github.cndrbrbr.buildcontest.manager.AutomodeManager;
 import io.github.cndrbrbr.buildcontest.manager.GameStateManager;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
@@ -13,6 +14,7 @@ import io.github.cndrbrbr.buildcontest.model.Group;
 import io.github.cndrbrbr.buildcontest.model.Plot;
 import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
@@ -32,7 +34,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
 
     private static final List<String> SUBCOMMANDS = List.of(
             "join", "tp", "setgroups", "setgroupsize", "setplotsize",
-            "setdistance", "setscore", "assign", "start", "end", "deleteworld", "reload");
+            "setdistance", "setscore", "assign", "start", "end", "deleteworld", "automode", "reload");
 
     private final BuildContestPlugin plugin;
     private final MainConfig mainConfig;
@@ -43,11 +45,13 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private final ScoreboardManager scoreboardManager;
     private final ScoreManager scoreManager;
     private final WorldManager worldManager;
+    private final AutomodeManager automodeManager;
 
     public BuildContestCommand(BuildContestPlugin plugin, MainConfig mainConfig, ScoreConfig scoreConfig,
                                 GroupManager groupManager, PlotManager plotManager,
                                 GameStateManager gameStateManager, ScoreboardManager scoreboardManager,
-                                ScoreManager scoreManager, WorldManager worldManager) {
+                                ScoreManager scoreManager, WorldManager worldManager,
+                                AutomodeManager automodeManager) {
         this.plugin = plugin;
         this.mainConfig = mainConfig;
         this.scoreConfig = scoreConfig;
@@ -57,6 +61,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         this.scoreboardManager = scoreboardManager;
         this.scoreManager = scoreManager;
         this.worldManager = worldManager;
+        this.automodeManager = automodeManager;
     }
 
     @Override
@@ -79,6 +84,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case "start" -> requireAdmin(sender) && handleStart(sender);
             case "end" -> requireAdmin(sender) && handleEnd(sender);
             case "deleteworld" -> requireAdmin(sender) && handleDeleteWorld(sender);
+            case "automode" -> requireAdmin(sender) && handleAutomode(sender, args);
             case "reload" -> requireAdmin(sender) && handleReload(sender);
             default -> {
                 sender.sendMessage("§cUnbekannter Unterbefehl: " + sub);
@@ -335,7 +341,8 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         return true;
     }
 
-    private boolean handleStart(CommandSender sender) {
+    /** Oeffentlich, damit AutomodeManager denselben Start-Ablauf ausloesen kann, sobald beide Teams voll sind. */
+    public boolean handleStart(CommandSender sender) {
         sender.sendMessage("§eErzeuge frische Bauplatz-Welt mit zufälligem Seed, das kann einen Moment dauern...");
         if (worldManager.regenerate().isEmpty()) {
             sender.sendMessage("§cAbgebrochen: plots.world ist in config.yml auf die Server-Hauptwelt gesetzt. "
@@ -357,14 +364,40 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         teleportAllBackToEntryWorld();
         sender.sendMessage("§aBuildcontest beendet. Baufortschritt ist jetzt eingefroren.");
 
-        groupManager.getGroups().values().stream()
+        List<Group> ranking = groupManager.getGroups().values().stream()
                 .sorted(Comparator.comparingInt((Group g) -> scoreManager.getGroupScore(g.getId())).reversed())
-                .forEach(group -> plugin.getServer().broadcastMessage(
-                        "§6" + group.getName() + ": §e" + scoreManager.getGroupScore(group.getId()) + " Punkte"));
+                .toList();
+        ranking.forEach(group -> plugin.getServer().broadcastMessage(
+                group.getColor() + group.getName() + ": §e" + scoreManager.getGroupScore(group.getId()) + " Punkte"));
+
+        // Siegergruppe zusaetzlich feiern (siehe rules.md#scoreboard-anzeige),
+        // nicht nur nuechtern in der Rangliste auffuehren.
+        if (!ranking.isEmpty()) {
+            Group winner = ranking.get(0);
+            plugin.getServer().broadcastMessage("§6§l*** " + winner.getColor() + winner.getName()
+                    + "§6§l hat den Buildcontest gewonnen! ***");
+            for (Player player : plugin.getServer().getOnlinePlayers()) {
+                player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1f, 1f);
+            }
+        }
 
         if (mainConfig.isAutoDeleteWorldOnEnd()) {
             handleDeleteWorld(sender);
         }
+        return true;
+    }
+
+    private boolean handleAutomode(CommandSender sender, String[] args) {
+        if (args.length < 2) {
+            sender.sendMessage("§eBenutzung: /bc automode <2x2|2x4>");
+            return true;
+        }
+        Optional<AutomodeManager.Preset> preset = AutomodeManager.Preset.parse(args[1]);
+        if (preset.isEmpty()) {
+            sender.sendMessage("§cUnbekannter Modus: " + args[1] + " (erlaubt: 2x2, 2x4)");
+            return true;
+        }
+        automodeManager.activate(preset.get(), sender);
         return true;
     }
 

@@ -57,9 +57,15 @@ public final class ScoreboardManager {
                 .toList();
 
         int line = sorted.size() + 2;
+        boolean leader = true;
         for (Group group : sorted) {
-            objective.getScore(ChatColor.YELLOW + group.getName() + ": " + scoreManager.getGroupScore(group.getId()))
-                    .setScore(line--);
+            // Fuehrende Gruppe bekommt einen Stern statt einer festen Farbe
+            // (siehe rules.md#scoreboard-anzeige) - jede Gruppe behaelt sonst
+            // immer ihre eigene Farbe (z. B. Rot/Blau im Automatikmodus).
+            String prefix = leader ? ChatColor.BOLD + "★ " : "";
+            leader = false;
+            objective.getScore(prefix + group.getColor() + group.getName() + ": "
+                    + scoreManager.getGroupScore(group.getId())).setScore(line--);
         }
 
         objective.getScore(" ").setScore(line--);

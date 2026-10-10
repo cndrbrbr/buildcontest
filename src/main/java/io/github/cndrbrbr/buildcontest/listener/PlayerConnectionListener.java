@@ -3,6 +3,8 @@ package io.github.cndrbrbr.buildcontest.listener;
 import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
+import org.bukkit.Bukkit;
+import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -31,6 +33,17 @@ public final class PlayerConnectionListener implements Listener {
                 && groupManager.getGroupOf(player.getUniqueId()).isEmpty()) {
             groupManager.resolvePresetGroup(player.getName())
                     .ifPresent(groupId -> groupManager.assign(player.getUniqueId(), groupId));
+        }
+
+        // In der Eingangswelt (siehe rules.md#setup-admin) startet jeder Spieler
+        // immer am (vom Admin gestalteten, von WorldManager auf festen Boden
+        // korrigierten) Weltspawn, statt an seiner zuletzt gespeicherten
+        // Position - die kann z. B. nach Admin-Umbauten nicht mehr sicher
+        // sein. War der Spieler zuletzt in der Bauplatz-Welt (laufender
+        // Contest), bleibt das unangetastet.
+        World primaryWorld = Bukkit.getWorlds().get(0);
+        if (player.getWorld().equals(primaryWorld)) {
+            player.teleport(primaryWorld.getSpawnLocation());
         }
 
         scoreboardManager.setup(player);

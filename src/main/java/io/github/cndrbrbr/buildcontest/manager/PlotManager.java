@@ -44,6 +44,8 @@ public final class PlotManager {
 
     private static final int LAND_SEARCH_RING_STEP = 96;
     private static final int LAND_SEARCH_MAX_RINGS = 10;
+    /** Hartes Zeitlimit fuer die Landsuche, siehe {@link #findLandAnchor}. */
+    private static final long LAND_SEARCH_TIME_BUDGET_NANOS = 8_000_000_000L;
     /** Maximale Abweichung (tiefer ODER hoeher) vom natuerlichen Boden am Referenzpunkt, siehe {@link #checkAllLand}. */
     private static final int MAX_EXCAVATION_DEPTH = 5;
     /** Sicherheitsgrenze, falls {@link #flatten} wegen einer Hoehle immer tiefer aufgefuellt werden muss. */
@@ -178,9 +180,21 @@ public final class PlotManager {
      * UND die Mitte des ersten Bauplatzes durchgehend auf trockenem Land
      * liegen (siehe Klassen-Javadoc). Liefert den Mittelpunkt sowie den
      * dafuer passenden, gemeinsamen Y-Level (siehe {@link #checkAllLand}).
+     *
+     * Zeitbudget statt nur Ring-Limit: Auf einem Ozean-Seed kann JEDER
+     * Kandidat einen neuen, noch ungenerierten Chunk beruehren (siehe
+     * {@link #checkAllLand}) - bei einem besonders grossen Ozean reichte das
+     * reine Ring-Limit nicht, um /bc start innerhalb einer fuer Spieler
+     * zumutbaren Zeit abzuschliessen (beobachteter Server-Hang >45s inkl.
+     * Verbindungsabbruch). Die Suche bricht deshalb zusaetzlich nach
+     * {@link #LAND_SEARCH_TIME_BUDGET_NANOS} ab und faellt dann auf den
+     * konfigurierten Mittelpunkt zurueck, auch wenn noch nicht alle Ringe
+     * durchsucht wurden.
      */
     private Optional<LandAnchor> findLandAnchor(World world, int startX, int startZ, int halfWidth, int halfDepth,
                                                  int sizeX, int sizeZ) {
+        long deadline = System.nanoTime() + LAND_SEARCH_TIME_BUDGET_NANOS;
+
         OptionalInt startGround = checkAllLand(world, startX, startZ, halfWidth, halfDepth, sizeX, sizeZ);
         if (startGround.isPresent()) {
             return Optional.of(new LandAnchor(startX, startZ, startGround.getAsInt()));
@@ -189,6 +203,12 @@ public final class PlotManager {
         for (int ring = 1; ring <= LAND_SEARCH_MAX_RINGS; ring++) {
             int offset = ring * LAND_SEARCH_RING_STEP;
             for (int[] direction : LAND_SEARCH_DIRECTIONS) {
+                if (System.nanoTime() > deadline) {
+                    plugin.getLogger().warning("Landsuche nach " + (LAND_SEARCH_TIME_BUDGET_NANOS / 1_000_000_000)
+                            + "s abgebrochen (vermutlich sehr grosser Ozean) - verwende Mittelpunkt und surface-y "
+                            + "aus config.yml trotzdem.");
+                    return Optional.empty();
+                }
                 int candidateX = startX + direction[0] * offset;
                 int candidateZ = startZ + direction[1] * offset;
                 OptionalInt ground = checkAllLand(world, candidateX, candidateZ, halfWidth, halfDepth, sizeX, sizeZ);
