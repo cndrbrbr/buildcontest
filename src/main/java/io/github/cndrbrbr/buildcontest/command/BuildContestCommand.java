@@ -10,7 +10,10 @@ import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
 import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.model.Group;
+import io.github.cndrbrbr.buildcontest.model.Plot;
+import org.bukkit.Location;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -21,13 +24,15 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
+import java.util.UUID;
 
 /** Implementiert die in rules.md#admin-befehle-übersicht beschriebenen Unterbefehle von /bc. */
 public final class BuildContestCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "join", "setgroups", "setgroupsize", "setplotsize",
-            "setdistance", "setscore", "assign", "start", "end", "reload");
+            "join", "tp", "setgroups", "setgroupsize", "setplotsize",
+            "setdistance", "setscore", "assign", "start", "end", "deleteworld", "reload");
 
     private final BuildContestPlugin plugin;
     private final MainConfig mainConfig;
@@ -64,6 +69,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         String sub = args[0].toLowerCase(Locale.ROOT);
         return switch (sub) {
             case "join" -> handleJoin(sender, args);
+            case "tp" -> handleTeleport(sender);
             case "setgroups" -> requireAdmin(sender) && handleSetGroups(sender, args);
             case "setgroupsize" -> requireAdmin(sender) && handleSetGroupSize(sender, args);
             case "setplotsize" -> requireAdmin(sender) && handleSetPlotSize(sender, args);
@@ -72,6 +78,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case "assign" -> requireAdmin(sender) && handleAssign(sender, args);
             case "start" -> requireAdmin(sender) && handleStart(sender);
             case "end" -> requireAdmin(sender) && handleEnd(sender);
+            case "deleteworld" -> requireAdmin(sender) && handleDeleteWorld(sender);
             case "reload" -> requireAdmin(sender) && handleReload(sender);
             default -> {
                 sender.sendMessage("§cUnbekannter Unterbefehl: " + sub);
@@ -114,6 +121,54 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case WRONG_MODE ->
                     sender.sendMessage("§cDie freie Gruppenwahl ist deaktiviert (Configfile-Zuweisung aktiv).");
         }
+        return true;
+    }
+
+    /**
+     * Teleportiert alle online Mitglieder der eigenen Gruppe gemeinsam zur
+     * Mitte ihres Bauplatzes (siehe rules.md#bauplaetze). Erfordert, dass der
+     * Contest bereits gestartet wurde (sonst existiert noch kein Bauplatz).
+     */
+    private boolean handleTeleport(CommandSender sender) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cNur Spieler können sich zu ihrem Bauplatz teleportieren lassen.");
+            return true;
+        }
+        Optional<Group> groupOpt = groupManager.getGroupOf(player.getUniqueId());
+        if (groupOpt.isEmpty()) {
+            sender.sendMessage("§cDu bist noch keiner Gruppe zugeordnet.");
+            return true;
+        }
+        Group group = groupOpt.get();
+
+        Optional<Plot> plotOpt = plotManager.getPlot(group.getId());
+        if (plotOpt.isEmpty()) {
+            sender.sendMessage("§cFür eure Gruppe gibt es noch keinen Bauplatz - wurde der Contest schon mit /bc start begonnen?");
+            return true;
+        }
+        Plot plot = plotOpt.get();
+
+        World world = plugin.getServer().getWorld(plot.getWorldName());
+        if (world == null) {
+            sender.sendMessage("§cDie Bauplatz-Welt ist aktuell nicht geladen.");
+            return true;
+        }
+
+        double centerX = (plot.getMinX() + plot.getMaxX()) / 2.0 + 0.5;
+        double centerZ = (plot.getMinZ() + plot.getMaxZ()) / 2.0 + 0.5;
+        Location destination = new Location(world, centerX, plot.getSurfaceY() + 1, centerZ);
+
+        int teleported = 0;
+        for (UUID memberId : group.getMembers()) {
+            Player member = plugin.getServer().getPlayer(memberId);
+            if (member == null) {
+                continue;
+            }
+            member.teleport(destination);
+            member.sendMessage("§aDu wurdest zu eurem Bauplatz teleportiert.");
+            teleported++;
+        }
+        sender.sendMessage("§a" + teleported + " online Mitglied(er) eurer Gruppe wurden zum Bauplatz teleportiert.");
         return true;
     }
 
@@ -245,6 +300,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             return true;
         }
 
+        scoreManager.clear();
         plotManager.generatePlots(groupManager.getGroups().values());
         gameStateManager.start();
         scoreboardManager.refreshAll();
@@ -260,6 +316,26 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
                 .sorted(Comparator.comparingInt((Group g) -> scoreManager.getGroupScore(g.getId())).reversed())
                 .forEach(group -> plugin.getServer().broadcastMessage(
                         "§6" + group.getName() + ": §e" + scoreManager.getGroupScore(group.getId()) + " Punkte"));
+
+        if (mainConfig.isAutoDeleteWorldOnEnd()) {
+            handleDeleteWorld(sender);
+        }
+        return true;
+    }
+
+    /**
+     * Loescht die Bauplatz-Welt (siehe WorldManager#delete,
+     * rules.md#spielablauf--ende) - entweder manuell per /bc deleteworld,
+     * oder automatisch am Ende von /bc end, siehe
+     * config.yml#game.auto-delete-world-on-end.
+     */
+    private boolean handleDeleteWorld(CommandSender sender) {
+        if (!worldManager.delete()) {
+            sender.sendMessage("§cAbgebrochen: plots.world ist in config.yml auf die Server-Hauptwelt gesetzt.");
+            return true;
+        }
+        plotManager.clear(groupManager);
+        sender.sendMessage("§aBauplatz-Welt gelöscht.");
         return true;
     }
 

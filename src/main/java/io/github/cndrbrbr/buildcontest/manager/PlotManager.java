@@ -5,6 +5,7 @@ import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import io.github.cndrbrbr.buildcontest.model.Group;
 import io.github.cndrbrbr.buildcontest.model.Plot;
 import org.bukkit.Bukkit;
+import org.bukkit.HeightMap;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -14,21 +15,38 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 
 /**
  * Platzierung und Planierung der Bauplaetze (siehe rules.md#bauplaetze).
  *
- * Bauplaetze werden in einem moeglichst quadratischen 2D-Raster um den
- * konfigurierten Mittelpunkt verteilt (Reihen x Spalten ~ sqrt(Anzahl)),
- * jeweils mit dem konfigurierten min-distance als Abstand zwischen den
- * Rasterzellen in beide Richtungen. Damit ist der tatsaechliche Abstand
- * zwischen Baupaltz-Kanten konstant gleich min-distance <= max-distance,
- * die konfigurierte Obergrenze wird also automatisch eingehalten; eine
- * variable Ausnutzung der Spanne bis max-distance (z. B. zufaellig) ist
- * eine moegliche spaetere Erweiterung, aber fuer die Kernanforderung
+ * Bauplaetze werden in einem moeglichst quadratischen 2D-Raster um einen
+ * Mittelpunkt verteilt (Reihen x Spalten ~ sqrt(Anzahl)), jeweils mit dem
+ * konfigurierten min-distance als Abstand zwischen den Rasterzellen in beide
+ * Richtungen. Damit ist der tatsaechliche Abstand zwischen Baupaltz-Kanten
+ * konstant gleich min-distance <= max-distance, die konfigurierte
+ * Obergrenze wird also automatisch eingehalten; eine variable Ausnutzung
+ * der Spanne bis max-distance (z. B. zufaellig) ist eine moegliche
+ * spaetere Erweiterung, aber fuer die Kernanforderung
  * ("Mindest-/Maximalabstand") nicht notwendig.
+ *
+ * Der konfigurierte Mittelpunkt (plots.center-x/-z) ist dabei nur ein
+ * STARTPUNKT fuer die Suche: da die Bauplatz-Welt bei jedem Contest neu mit
+ * zufaelligem Seed erzeugt wird (siehe WorldManager), kann an dieser Stelle
+ * Wasser (Ozean/See) liegen. {@link #findLandAnchor} sucht deshalb
+ * automatisch einen nahegelegenen, durchgehend trockenen Platz fuer das
+ * GESAMTE Bauplatz-Raster und leitet den gemeinsamen Y-Level daraus ab,
+ * statt den festen config.yml-Wert fuer alle Gruppen gleich zu verwenden -
+ * ein Bauplatz im Wasser waere sonst zufaellig nur fuer einzelne Gruppen ein
+ * Nachteil (siehe rules.md#setup-admin).
  */
 public final class PlotManager {
+
+    private static final int LAND_SEARCH_RING_STEP = 64;
+    private static final int LAND_SEARCH_MAX_RINGS = 15;
+    private static final int[][] LAND_SEARCH_DIRECTIONS = {
+            {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
+    };
 
     private final BuildContestPlugin plugin;
     private final MainConfig mainConfig;
@@ -58,12 +76,28 @@ public final class PlotManager {
             return;
         }
 
-        List<Plot> layout = computeGridLayout(
-                groupList.size(),
-                mainConfig.getPlotSizeX(), mainConfig.getPlotSizeZ(),
-                mainConfig.getMinDistance(),
-                mainConfig.getCenterX(), mainConfig.getCenterZ(),
-                mainConfig.getSurfaceY(), mainConfig.getWorldName());
+        String worldName = mainConfig.getWorldName();
+        World world = Bukkit.getWorld(worldName);
+        if (world == null) {
+            plugin.getLogger().warning("Welt '" + worldName + "' nicht gefunden, Bauplaetze wurden nicht generiert.");
+            return;
+        }
+
+        int sizeX = mainConfig.getPlotSizeX();
+        int sizeZ = mainConfig.getPlotSizeZ();
+        int gap = mainConfig.getMinDistance();
+        int[] halfExtent = gridHalfExtent(groupList.size(), sizeX, sizeZ, gap);
+
+        LandAnchor anchor = findLandAnchor(world, mainConfig.getCenterX(), mainConfig.getCenterZ(),
+                halfExtent[0], halfExtent[1]).orElseGet(() -> {
+                    plugin.getLogger().warning("Kein durchgehend trockener Platz fuer die Bauplaetze in der Naehe "
+                            + "des konfigurierten Mittelpunkts gefunden (Ozean-Welt?) - verwende Mittelpunkt und "
+                            + "surface-y aus config.yml trotzdem, Bauplaetze liegen moeglicherweise im Wasser.");
+                    return new LandAnchor(mainConfig.getCenterX(), mainConfig.getCenterZ(), mainConfig.getSurfaceY());
+                });
+
+        List<Plot> layout = computeGridLayout(groupList.size(), sizeX, sizeZ, gap,
+                anchor.centerX(), anchor.centerZ(), anchor.surfaceY(), worldName);
 
         plotsByGroup.clear();
         for (int i = 0; i < groupList.size(); i++) {
@@ -75,7 +109,7 @@ public final class PlotManager {
                     template.getSurfaceY());
             plotsByGroup.put(group.getId(), plot);
             group.setPlot(plot);
-            flatten(plot);
+            flatten(plot, world);
         }
     }
 
@@ -112,14 +146,75 @@ public final class PlotManager {
         return result;
     }
 
-    private void flatten(Plot plot) {
-        World world = Bukkit.getWorld(plot.getWorldName());
-        if (world == null) {
-            plugin.getLogger().warning("Welt '" + plot.getWorldName() + "' nicht gefunden, Bauplatz "
-                    + plot.getGroupId() + " wurde nicht planiert.");
-            return;
+    /** Halbe Breite/Tiefe des Gesamtrasters, siehe {@link #computeGridLayout}, fuer die Landsuche. */
+    private static int[] gridHalfExtent(int count, int sizeX, int sizeZ, int gap) {
+        int cols = (int) Math.ceil(Math.sqrt(count));
+        int rows = (int) Math.ceil((double) count / cols);
+        int totalWidth = cols * sizeX + (cols - 1) * gap;
+        int totalDepth = rows * sizeZ + (rows - 1) * gap;
+        return new int[]{totalWidth / 2, totalDepth / 2};
+    }
+
+    private record LandAnchor(int centerX, int centerZ, int surfaceY) {
+    }
+
+    /**
+     * Sucht ausgehend vom Startpunkt in konzentrischen Ringen nach einem
+     * Mittelpunkt, an dem die vier Eckpunkte und die Mitte des gesamten
+     * Bauplatz-Rasters durchgehend auf trockenem Land liegen (siehe
+     * Klassen-Javadoc). Liefert den Mittelpunkt sowie den dafuer passenden,
+     * gemeinsamen Y-Level (direkt ueber dem hoechsten Bodenpunkt der
+     * Stichproben).
+     */
+    private Optional<LandAnchor> findLandAnchor(World world, int startX, int startZ, int halfWidth, int halfDepth) {
+        OptionalInt startGround = checkAllLand(world, startX, startZ, halfWidth, halfDepth);
+        if (startGround.isPresent()) {
+            return Optional.of(new LandAnchor(startX, startZ, startGround.getAsInt()));
         }
 
+        for (int ring = 1; ring <= LAND_SEARCH_MAX_RINGS; ring++) {
+            int offset = ring * LAND_SEARCH_RING_STEP;
+            for (int[] direction : LAND_SEARCH_DIRECTIONS) {
+                int candidateX = startX + direction[0] * offset;
+                int candidateZ = startZ + direction[1] * offset;
+                OptionalInt ground = checkAllLand(world, candidateX, candidateZ, halfWidth, halfDepth);
+                if (ground.isPresent()) {
+                    return Optional.of(new LandAnchor(candidateX, candidateZ, ground.getAsInt()));
+                }
+            }
+        }
+        return Optional.empty();
+    }
+
+    /**
+     * Prueft Mittelpunkt und vier Eckpunkte des Bauplatz-Rasters an dieser
+     * Kandidaten-Position: liegt an JEDEM Punkt Wasser (Hoehe inkl.
+     * Fluessigkeiten > tatsaechlicher Boden), gilt die Position als
+     * ungeeignet. Sonst wird der hoechste Bodenpunkt der Stichproben
+     * zurueckgegeben (Bauplatz-Oberflaeche liegt direkt darueber).
+     */
+    private OptionalInt checkAllLand(World world, int centerX, int centerZ, int halfWidth, int halfDepth) {
+        int[][] samplePoints = {
+                {centerX, centerZ},
+                {centerX - halfWidth, centerZ - halfDepth},
+                {centerX + halfWidth, centerZ - halfDepth},
+                {centerX - halfWidth, centerZ + halfDepth},
+                {centerX + halfWidth, centerZ + halfDepth},
+        };
+
+        int maxGround = Integer.MIN_VALUE;
+        for (int[] point : samplePoints) {
+            int ground = world.getHighestBlockYAt(point[0], point[1], HeightMap.OCEAN_FLOOR);
+            int surfaceWithLiquids = world.getHighestBlockYAt(point[0], point[1], HeightMap.MOTION_BLOCKING_NO_LEAVES);
+            if (surfaceWithLiquids > ground) {
+                return OptionalInt.empty();
+            }
+            maxGround = Math.max(maxGround, ground);
+        }
+        return OptionalInt.of(maxGround);
+    }
+
+    private void flatten(Plot plot, World world) {
         int surfaceY = plot.getSurfaceY();
         int clearUpTo = Math.min(world.getMaxHeight() - 1, surfaceY + 150);
         int fillDownTo = Math.max(world.getMinHeight(), surfaceY - 4);
@@ -155,5 +250,15 @@ public final class PlotManager {
         plotsByGroup.clear();
         plotsByGroup.putAll(plots);
         plots.forEach((groupId, plot) -> groupManager.getGroup(groupId).ifPresent(group -> group.setPlot(plot)));
+    }
+
+    /**
+     * Verwirft alle Bauplatz-Zuordnungen, z. B. nachdem die Bauplatz-Welt
+     * geloescht wurde (siehe WorldManager#delete, rules.md#spielablauf--ende)
+     * und die bisherigen Plot-Grenzen damit gegenstandslos sind.
+     */
+    public void clear(GroupManager groupManager) {
+        plotsByGroup.keySet().forEach(groupId -> groupManager.getGroup(groupId).ifPresent(group -> group.setPlot(null)));
+        plotsByGroup.clear();
     }
 }

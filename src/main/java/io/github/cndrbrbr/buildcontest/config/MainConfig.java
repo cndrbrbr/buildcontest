@@ -30,6 +30,7 @@ public final class MainConfig {
 
     private int durationMinutes;
     private int autosaveMinutes;
+    private boolean autoDeleteWorldOnEnd;
 
     public MainConfig(BuildContestPlugin plugin) {
         this.plugin = plugin;
@@ -64,6 +65,7 @@ public final class MainConfig {
 
         durationMinutes = config.getInt("game.duration-minutes", 0);
         autosaveMinutes = config.getInt("game.autosave-minutes", 5);
+        autoDeleteWorldOnEnd = config.getBoolean("game.auto-delete-world-on-end", false);
     }
 
     public int getGroupCount() {
@@ -121,5 +123,10 @@ public final class MainConfig {
     /** Intervall fuer das automatische Sichern des Spielstands, siehe persistence.DataStore. 0 = deaktiviert. */
     public int getAutosaveMinutes() {
         return autosaveMinutes;
+    }
+
+    /** Ob /bc end die Bauplatz-Welt automatisch loeschen soll, siehe WorldManager#delete. */
+    public boolean isAutoDeleteWorldOnEnd() {
+        return autoDeleteWorldOnEnd;
     }
 }

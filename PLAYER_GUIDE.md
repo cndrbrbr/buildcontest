@@ -18,6 +18,9 @@ Je nach Server-Einstellung gibt es zwei Modi (euer Admin sagt euch, welcher akti
 - **Feste Zuweisung**: Der Admin trägt euch per Konfiguration oder `/bc assign` einer Gruppe zu –
   hier müsst ihr nichts selbst tun.
 
+Sobald der Contest läuft, bringt euch `/bc tp` als Gruppe gemeinsam zu eurem Bauplatz (alle online
+Mitglieder werden teleportiert).
+
 ## Bauen
 
 - Euer Bauplatz ist eine rechteckige, flach planierte Fläche. Nach oben (Y) gibt es **kein

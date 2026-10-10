@@ -8,7 +8,7 @@ description: Survival-Buildcontest zwischen mehreren Gruppen mit Punktesystem na
 commands:
   bc:
     description: Buildcontest-Hauptbefehl
-    usage: /<command> <join|setgroups|setgroupsize|setplotsize|setdistance|setscore|assign|start|end|reload>
+    usage: /<command> <join|tp|setgroups|setgroupsize|setplotsize|setdistance|setscore|assign|start|end|deleteworld|reload>
     permission: buildcontest.use
 
 permissions:

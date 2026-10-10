@@ -17,6 +17,8 @@ Vor Spielstart konfiguriert ein Admin:
 
 Beim Start (`/bc start`) wird die Bauplatz-Welt komplett neu mit einem zufälligen Seed erzeugt – ein frisches, normal generiertes Terrain für jeden Contest, keine Wiederverwendung alter Baureste. Erst danach werden die Bauplätze automatisch im Weltraster verteilt, flach planiert (Vegetation entfernt, Oberfläche auf ein einheitliches Y-Level gebracht) und als rechteckige Grundfläche festgelegt; der Rest der Welt bleibt unverändertes, natürliches Terrain.
 
+Das gesamte Bauplatz-Raster liegt dabei immer durchgehend auf trockenem Land, nie im Wasser (Ozean/See): Ausgehend vom konfigurierten Mittelpunkt wird automatisch nach einem nahegelegenen, komplett trockenen Platz für alle Bauplätze gemeinsam gesucht; der gemeinsame Y-Level ergibt sich aus der dort tatsächlich vorgefundenen Geländehöhe statt aus einem fest konfigurierten Wert. Das gilt für alle Gruppen gleich – es gibt keinen Modus, in dem einzelne Bauplätze zufällig im Wasser und andere an Land liegen.
+
 ## Gruppen
 
 - Jede Gruppe hat eine admin-konfigurierbare **maximale Gruppengröße**.
@@ -79,10 +81,14 @@ Dazu wird pro platziertem gewerteten Block gespeichert, welcher Spieler ihn plat
 
 ## Spielablauf & Ende
 
-- `/bc start` beginnt den Contest.
+- `/bc start` beginnt den Contest. Dabei wird die Bauplatz-Welt immer komplett neu mit einem zufälligen Seed erzeugt (siehe „Setup (Admin)") und alle Punktestände aus einem eventuell vorherigen Contest werden zurückgesetzt.
 - Der Admin kann optional eine feste Spieldauer konfigurieren, nach deren Ablauf der Contest automatisch endet.
 - Unabhängig davon kann der Admin den Contest jederzeit vorzeitig per `/bc end` beenden.
 - Nach dem Ende wird der Bauplatz eingefroren (kein weiteres Platzieren/Abbauen gewerteter Blöcke mehr möglich) und der Endstand sowie die Gewinnergruppe werden bekanntgegeben.
+- Die Bauplatz-Welt selbst bleibt nach dem Ende zunächst stehen, damit Admin und Spieler die fertigen Bauten noch begutachten können. Sie wird gelöscht entweder:
+  - manuell durch den Admin per `/bc deleteworld`, oder
+  - automatisch direkt im Anschluss an `/bc end`, wenn dies in der Konfiguration (`game.auto-delete-world-on-end`) aktiviert ist.
+  - Spätestens beim nächsten `/bc start` wird die alte Welt ohnehin komplett ersetzt.
 
 ## Admin-Befehle (Übersicht)
 

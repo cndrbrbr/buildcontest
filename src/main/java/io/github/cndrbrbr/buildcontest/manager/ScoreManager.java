@@ -105,6 +105,21 @@ public final class ScoreManager {
         personalScores.merge(entry.placer(), -entry.points(), Integer::sum);
     }
 
+    /**
+     * Setzt alle Scores und gewerteten Bloecke zurueck - fuer einen komplett
+     * frischen Contest-Start auf der neu erzeugten Welt (siehe
+     * WorldManager#regenerate, rules.md#setup-admin). Ohne diesen Reset
+     * wuerden Punkte aus einem vorherigen Contest in den naechsten
+     * uebernommen, obwohl die zugehoerigen Bloecke mit der alten Welt bereits
+     * geloescht wurden.
+     */
+    public void clear() {
+        scoredBlocks.clear();
+        connectedByPlot.clear();
+        groupScores.clear();
+        personalScores.clear();
+    }
+
     /** Ein gewerteter Block fuer den Export/Import ueber einen Neustart hinweg (siehe persistence.DataStore). */
     public record Entry(BlockKey key, int groupId, UUID placer, int points) {
     }

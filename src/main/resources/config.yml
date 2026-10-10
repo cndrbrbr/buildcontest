@@ -39,3 +39,8 @@ game:
   # gesichert wird, damit ein Absturz moeglichst wenig Fortschritt kostet.
   # 0 = deaktiviert.
   autosave-minutes: 5
+  # Bauplatz-Welt bei /bc end automatisch komplett loeschen (siehe
+  # rules.md#spielablauf--ende)? Bei false bleibt sie stehen, bis ein Admin
+  # sie per /bc deleteworld manuell entfernt oder /bc start sie beim naechsten
+  # Contest ohnehin neu erzeugt (was die alte Welt ebenfalls loescht).
+  auto-delete-world-on-end: false

@@ -27,11 +27,12 @@ Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punkt
 | `groups.assignments` | Nur bei `CONFIG`: Minecraft-Name → Gruppennummer |
 | `plots.size-x` / `plots.size-z` | Grundfläche eines Bauplatzes |
 | `plots.min-distance` / `plots.max-distance` | Abstand zwischen Bauplätzen |
-| `plots.surface-y` | Y-Level, auf das planiert wird |
+| `plots.surface-y` | Nur Fallback, falls keine trockene Stelle gefunden wird (siehe unten) – normalerweise wird der Y-Level automatisch aus dem tatsächlichen Gelände ermittelt |
 | `plots.center-x` / `plots.center-z` | Mittelpunkt des Bauplatz-Rasters |
 | `plots.world` | **Siehe Warnung unten** |
 | `game.duration-minutes` | Automatisches Ende nach X Minuten, `0` = nur `/bc end` |
 | `game.autosave-minutes` | Intervall für automatisches Sichern des Spielstands, `0` = aus |
+| `game.auto-delete-world-on-end` | Bauplatz-Welt direkt bei `/bc end` automatisch löschen? Standard `false` (dann per `/bc deleteworld` manuell) |
 
 ### ⚠️ `plots.world` darf NICHT die Server-Hauptwelt sein
 
@@ -73,10 +74,11 @@ rules.md#punktesystem). Eigene Werte setzen:
    ```
    /bc start
    ```
-   Erzeugt die frische Bauplatz-Welt (neuer Zufalls-Seed), verteilt die Bauplätze im Raster und
-   planiert sie. Das kann je nach Bauplatzgröße/-anzahl einige Sekunden dauern. Teleportiere die
-   Gruppen anschließend manuell zu ihren Bauplätzen (z. B. per `/tp <spieler> <x> <y> <z>` in
-   `plots.world`) oder spawne sie von vornherein dort.
+   Erzeugt die frische Bauplatz-Welt (neuer Zufalls-Seed, automatisch auf trockenem Land - siehe
+   rules.md#setup-admin), verteilt die Bauplätze im Raster und planiert sie, und setzt alle Scores
+   aus einem eventuell vorherigen Contest zurück. Das kann je nach Bauplatzgröße/-anzahl einige
+   Sekunden dauern. Spieler können sich danach selbst per `/bc tp` zum Bauplatz ihrer Gruppe
+   teleportieren lassen.
 4. **Laufenlassen**: Scoreboard, Schutzmechanismen und Punktewertung laufen automatisch (siehe
    rules.md#bauregeln, #schutzmechanismen, #scoreboard-anzeige).
 5. **Ende**:
@@ -85,6 +87,11 @@ rules.md#punktesystem). Eigene Werte setzen:
    ```
    Friert den Baufortschritt ein und gibt den Endstand (Rangliste nach Gruppenpunkten) im Chat
    bekannt. Läuft auch automatisch nach `game.duration-minutes`, falls gesetzt.
+6. **Bauplatz-Welt löschen** (optional, siehe rules.md#spielablauf--ende): Bleibt nach `/bc end`
+   zunächst stehen, damit die Bauten noch begutachtet werden können. Danach entweder
+   `/bc deleteworld` manuell ausführen, oder `game.auto-delete-world-on-end: true` setzen, damit das
+   automatisch direkt nach `/bc end` passiert. Spätestens der nächste `/bc start` ersetzt die Welt
+   ohnehin komplett.
 
 ## Persistenz
 
@@ -104,9 +111,13 @@ Timer wird dabei korrekt mit der verbleibenden Restzeit fortgesetzt.
 | `/bc setdistance <min> <max>` | Mindest-/Maximalabstand zwischen Bauplätzen |
 | `/bc setscore <block> <punkte>` | Punktwert für einen Blocktyp (nur Laufzeit) |
 | `/bc assign <spieler> <gruppe>` | Spieler einer Gruppe zuweisen |
-| `/bc start` | Welt neu erzeugen, Bauplätze generieren, Contest starten |
+| `/bc start` | Welt neu erzeugen, Bauplätze generieren, Scores zurücksetzen, Contest starten |
 | `/bc end` | Contest beenden, Endstand bekanntgeben |
+| `/bc deleteworld` | Bauplatz-Welt löschen (siehe `game.auto-delete-world-on-end`) |
 | `/bc reload` | `config.yml` und `scoreboard-config.yml` neu laden |
+
+Zusätzlich für Spieler nützlich: `/bc tp` teleportiert die eigene (online) Gruppe gemeinsam zu
+ihrem Bauplatz.
 
 ## Troubleshooting
 
@@ -117,3 +128,8 @@ Timer wird dabei korrekt mit der verbleibenden Restzeit fortgesetzt.
   dieser Block zählt dann einfach `default_score` (meist 0).
 - **Server knapp bei Arbeitsspeicher**: `plots.size-x`/`size-z` und `plots.min-distance` klein
   halten reduziert die beim Planieren/Welterzeugen zu ladende Chunk-Fläche spürbar.
+- **„Kein durchgehend trockener Platz … gefunden (Ozean-Welt?)“**: Die automatische Landsuche
+  (siehe rules.md#setup-admin) hat in der Umgebung des konfigurierten Mittelpunkts keine
+  durchgehend trockene Fläche gefunden und weicht auf `plots.center-x`/`-z` und `plots.surface-y`
+  aus der Config aus - die Bauplätze können dann im Wasser liegen. Einfach `/bc start` erneut
+  ausführen (neuer Zufalls-Seed) oder `plots.center-x`/`-z` auf eine andere Gegend setzen.
