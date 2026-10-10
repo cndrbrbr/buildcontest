@@ -163,8 +163,12 @@ public final class PlotManager {
      * Mittelpunkt, an dem die vier Eckpunkte und die Mitte des gesamten
      * Bauplatz-Rasters durchgehend auf trockenem Land liegen (siehe
      * Klassen-Javadoc). Liefert den Mittelpunkt sowie den dafuer passenden,
-     * gemeinsamen Y-Level (direkt ueber dem hoechsten Bodenpunkt der
-     * Stichproben).
+     * gemeinsamen Y-Level - bewusst der TIEFSTE Bodenpunkt der Stichproben,
+     * nicht der hoechste: so wird beim Planieren immer nur ausgeschachtet
+     * (natuerliches Terrain oberhalb des Levels abgetragen), nie mit
+     * Fuellmaterial aufgeschuettet. Ein aufgeschuetteter Bauplatz koennte an
+     * tieferen Stellen auf einem Hohlraum "schweben", von dem Spieler nicht
+     * mehr auf natuerlichem Weg hochkommen.
      */
     private Optional<LandAnchor> findLandAnchor(World world, int startX, int startZ, int halfWidth, int halfDepth) {
         OptionalInt startGround = checkAllLand(world, startX, startZ, halfWidth, halfDepth);
@@ -190,8 +194,9 @@ public final class PlotManager {
      * Prueft Mittelpunkt und vier Eckpunkte des Bauplatz-Rasters an dieser
      * Kandidaten-Position: liegt an JEDEM Punkt Wasser (Hoehe inkl.
      * Fluessigkeiten > tatsaechlicher Boden), gilt die Position als
-     * ungeeignet. Sonst wird der hoechste Bodenpunkt der Stichproben
-     * zurueckgegeben (Bauplatz-Oberflaeche liegt direkt darueber).
+     * ungeeignet. Sonst wird der TIEFSTE Bodenpunkt der Stichproben
+     * zurueckgegeben (siehe {@link #findLandAnchor}, Bauplatz-Oberflaeche
+     * liegt direkt darueber - nie darunter aufgefuellt).
      */
     private OptionalInt checkAllLand(World world, int centerX, int centerZ, int halfWidth, int halfDepth) {
         int[][] samplePoints = {
@@ -202,18 +207,25 @@ public final class PlotManager {
                 {centerX + halfWidth, centerZ + halfDepth},
         };
 
-        int maxGround = Integer.MIN_VALUE;
+        int minGround = Integer.MAX_VALUE;
         for (int[] point : samplePoints) {
             int ground = world.getHighestBlockYAt(point[0], point[1], HeightMap.OCEAN_FLOOR);
             int surfaceWithLiquids = world.getHighestBlockYAt(point[0], point[1], HeightMap.MOTION_BLOCKING_NO_LEAVES);
             if (surfaceWithLiquids > ground) {
                 return OptionalInt.empty();
             }
-            maxGround = Math.max(maxGround, ground);
+            minGround = Math.min(minGround, ground);
         }
-        return OptionalInt.of(maxGround);
+        return OptionalInt.of(minGround);
     }
 
+    /**
+     * Planiert einen Bauplatz auf den gemeinsamen surfaceY (siehe
+     * {@link #findLandAnchor}: der tiefste Bodenpunkt der Stichproben, damit
+     * hier immer nur ausgeschachtet statt aufgefuellt wird). Alles oberhalb
+     * wird abgetragen, darunter liegt garantiert bereits natuerlicher,
+     * solider Boden.
+     */
     private void flatten(Plot plot, World world) {
         int surfaceY = plot.getSurfaceY();
         int clearUpTo = Math.min(world.getMaxHeight() - 1, surfaceY + 150);

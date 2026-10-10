@@ -146,17 +146,12 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             sender.sendMessage("§cFür eure Gruppe gibt es noch keinen Bauplatz - wurde der Contest schon mit /bc start begonnen?");
             return true;
         }
-        Plot plot = plotOpt.get();
-
-        World world = plugin.getServer().getWorld(plot.getWorldName());
-        if (world == null) {
+        Optional<Location> destinationOpt = plotCenterLocation(plotOpt.get());
+        if (destinationOpt.isEmpty()) {
             sender.sendMessage("§cDie Bauplatz-Welt ist aktuell nicht geladen.");
             return true;
         }
-
-        double centerX = (plot.getMinX() + plot.getMaxX()) / 2.0 + 0.5;
-        double centerZ = (plot.getMinZ() + plot.getMaxZ()) / 2.0 + 0.5;
-        Location destination = new Location(world, centerX, plot.getSurfaceY() + 1, centerZ);
+        Location destination = destinationOpt.get();
 
         int teleported = 0;
         for (UUID memberId : group.getMembers()) {
@@ -170,6 +165,54 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         }
         sender.sendMessage("§a" + teleported + " online Mitglied(er) eurer Gruppe wurden zum Bauplatz teleportiert.");
         return true;
+    }
+
+    private Optional<Location> plotCenterLocation(Plot plot) {
+        World world = plugin.getServer().getWorld(plot.getWorldName());
+        if (world == null) {
+            return Optional.empty();
+        }
+        double centerX = (plot.getMinX() + plot.getMaxX()) / 2.0 + 0.5;
+        double centerZ = (plot.getMinZ() + plot.getMaxZ()) / 2.0 + 0.5;
+        return Optional.of(new Location(world, centerX, plot.getSurfaceY() + 1, centerZ));
+    }
+
+    /**
+     * Teleportiert bei Contest-Start alle online Spieler in die Bauplatz-Welt
+     * (siehe rules.md#spielablauf--ende): Mitglieder einer Gruppe direkt zu
+     * ihrem Bauplatz, alle anderen (noch keiner Gruppe zugeordnet) an den
+     * Welt-Spawnpunkt.
+     */
+    private void teleportAllToBuildWorld() {
+        World buildWorld = plugin.getServer().getWorld(mainConfig.getWorldName());
+        if (buildWorld == null) {
+            return;
+        }
+        Location fallback = buildWorld.getSpawnLocation();
+        for (Player player : plugin.getServer().getOnlinePlayers()) {
+            Location destination = groupManager.getGroupOf(player.getUniqueId())
+                    .flatMap(group -> plotManager.getPlot(group.getId()))
+                    .flatMap(this::plotCenterLocation)
+                    .orElse(fallback);
+            player.teleport(destination);
+        }
+    }
+
+    /**
+     * Teleportiert bei Contest-Ende alle Spieler, die sich noch in der
+     * Bauplatz-Welt befinden, zurueck in die Eingangswelt (Server-Hauptwelt),
+     * siehe rules.md#spielablauf--ende.
+     */
+    private void teleportAllBackToEntryWorld() {
+        World buildWorld = plugin.getServer().getWorld(mainConfig.getWorldName());
+        List<World> worlds = plugin.getServer().getWorlds();
+        if (buildWorld == null || worlds.isEmpty()) {
+            return;
+        }
+        Location entrySpawn = worlds.get(0).getSpawnLocation();
+        for (Player player : new ArrayList<>(buildWorld.getPlayers())) {
+            player.teleport(entrySpawn);
+        }
     }
 
     private boolean handleSetGroups(CommandSender sender, String[] args) {
@@ -304,12 +347,14 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         plotManager.generatePlots(groupManager.getGroups().values());
         gameStateManager.start();
         scoreboardManager.refreshAll();
+        teleportAllToBuildWorld();
         sender.sendMessage("§aBuildcontest gestartet. Neue Welt erzeugt, Bauplätze generiert und planiert.");
         return true;
     }
 
     private boolean handleEnd(CommandSender sender) {
         gameStateManager.end();
+        teleportAllBackToEntryWorld();
         sender.sendMessage("§aBuildcontest beendet. Baufortschritt ist jetzt eingefroren.");
 
         groupManager.getGroups().values().stream()

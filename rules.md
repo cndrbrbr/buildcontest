@@ -17,7 +17,9 @@ Vor Spielstart konfiguriert ein Admin:
 
 Beim Start (`/bc start`) wird die Bauplatz-Welt komplett neu mit einem zufälligen Seed erzeugt – ein frisches, normal generiertes Terrain für jeden Contest, keine Wiederverwendung alter Baureste. Erst danach werden die Bauplätze automatisch im Weltraster verteilt, flach planiert (Vegetation entfernt, Oberfläche auf ein einheitliches Y-Level gebracht) und als rechteckige Grundfläche festgelegt; der Rest der Welt bleibt unverändertes, natürliches Terrain.
 
-Das gesamte Bauplatz-Raster liegt dabei immer durchgehend auf trockenem Land, nie im Wasser (Ozean/See): Ausgehend vom konfigurierten Mittelpunkt wird automatisch nach einem nahegelegenen, komplett trockenen Platz für alle Bauplätze gemeinsam gesucht; der gemeinsame Y-Level ergibt sich aus der dort tatsächlich vorgefundenen Geländehöhe statt aus einem fest konfigurierten Wert. Das gilt für alle Gruppen gleich – es gibt keinen Modus, in dem einzelne Bauplätze zufällig im Wasser und andere an Land liegen.
+Das gesamte Bauplatz-Raster liegt dabei immer durchgehend auf trockenem Land, nie im Wasser (Ozean/See): Ausgehend vom konfigurierten Mittelpunkt wird automatisch nach einem nahegelegenen, komplett trockenen Platz für alle Bauplätze gemeinsam gesucht; der gemeinsame Y-Level ergibt sich aus der dort tatsächlich vorgefundenen, tiefsten Geländehöhe statt aus einem fest konfigurierten Wert. Dadurch wird beim Planieren immer nur ausgeschachtet (Hügel innerhalb des Bauplatzes abgetragen), nie mit Füllmaterial aufgeschüttet – ein Bauplatz steht also immer direkt auf gewachsenem Boden und schwebt nie über einem Hohlraum. Das gilt für alle Gruppen gleich – es gibt keinen Modus, in dem einzelne Bauplätze zufällig im Wasser und andere an Land liegen.
+
+Sobald der Contest startet, werden alle online Spieler automatisch in die Bauplatz-Welt teleportiert (Mitglieder einer Gruppe direkt zu ihrem eigenen Bauplatz); bei Spielende geht es für alle, die sich noch dort befinden, automatisch zurück in die Eingangswelt (die normale Server-Hauptwelt).
 
 ## Gruppen
 

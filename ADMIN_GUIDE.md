@@ -77,15 +77,17 @@ rules.md#punktesystem). Eigene Werte setzen:
    Erzeugt die frische Bauplatz-Welt (neuer Zufalls-Seed, automatisch auf trockenem Land - siehe
    rules.md#setup-admin), verteilt die Bauplätze im Raster und planiert sie, und setzt alle Scores
    aus einem eventuell vorherigen Contest zurück. Das kann je nach Bauplatzgröße/-anzahl einige
-   Sekunden dauern. Spieler können sich danach selbst per `/bc tp` zum Bauplatz ihrer Gruppe
-   teleportieren lassen.
+   Sekunden dauern. Alle online Spieler werden automatisch in die Bauplatz-Welt teleportiert -
+   Mitglieder einer Gruppe direkt zu ihrem Bauplatz, alle anderen an den Welt-Spawn. Später
+   beitretende/zugewiesene Spieler nutzen `/bc tp`, um selbst nachzukommen.
 4. **Laufenlassen**: Scoreboard, Schutzmechanismen und Punktewertung laufen automatisch (siehe
    rules.md#bauregeln, #schutzmechanismen, #scoreboard-anzeige).
 5. **Ende**:
    ```
    /bc end
    ```
-   Friert den Baufortschritt ein und gibt den Endstand (Rangliste nach Gruppenpunkten) im Chat
+   Friert den Baufortschritt ein, teleportiert alle Spieler aus der Bauplatz-Welt zurück in die
+   Eingangswelt (Server-Hauptwelt) und gibt den Endstand (Rangliste nach Gruppenpunkten) im Chat
    bekannt. Läuft auch automatisch nach `game.duration-minutes`, falls gesetzt.
 6. **Bauplatz-Welt löschen** (optional, siehe rules.md#spielablauf--ende): Bleibt nach `/bc end`
    zunächst stehen, damit die Bauten noch begutachtet werden können. Danach entweder
