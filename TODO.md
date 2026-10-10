@@ -7,25 +7,25 @@
 ## P0 – Kritische Grundlage
 
 ### 1. Welt und Bauplatzgenerierung
-- [ ] Bestehenden Welt-Lebenszyklus gegen `rules.md` prüfen; eine **gemeinsame** Survival-/Contest-Welt verwenden.
-- [ ] Neue Welt nur für einen **neuen** Wettbewerb mit zufälligem Seed erzeugen; bei Resume dieselbe Welt erhalten.
-- [ ] Für jede Gruppe trockenen, geeigneten Bauplatz ermitteln, lokal planieren und **individuellen Y-Level** zulassen.
-- [ ] Bauplatzabstände als Abstand der Grundstücksgrenzen berücksichtigen (Standard 200–500 Blöcke); Geländegefälle und Höhlen prüfen.
-- [ ] Fundament/Ankerfläche und Grundstücksgrenzen dauerhaft speichern; natürliche Blöcke nie automatisch werten.
-- [ ] Nur beim erstmaligen Start sichere Startposition erlauben; nach dem Start keine Teleport-Abkürzungen bieten.
-- [ ] Außerhalb der Bauplätze normale Survival-Aktionen erlauben (Farmen, Wege, Brücken, Transport und Handel).
-- [ ] Lobby-/Eingangswelt unverändert lassen und niemals durch Contest-Welt-Löschung erfassen.
+- [x] Bestehenden Welt-Lebenszyklus gegen `rules.md` prüfen; eine **gemeinsame** Survival-/Contest-Welt verwenden. (0c95f2b)
+- [x] Neue Welt nur für einen **neuen** Wettbewerb mit zufälligem Seed erzeugen; bei Resume dieselbe Welt erhalten. (0c95f2b)
+- [x] Für jede Gruppe trockenen, geeigneten Bauplatz ermitteln, lokal planieren und **individuellen Y-Level** zulassen. (0c95f2b)
+- [x] Bauplatzabstände als Abstand der Grundstücksgrenzen berücksichtigen (Standard 200–500 Blöcke); Geländegefälle und Höhlen prüfen. (bereits vor 0c95f2b vorhanden, live mit 200/500-Default bestätigt)
+- [x] Fundament/Ankerfläche und Grundstücksgrenzen dauerhaft speichern; natürliche Blöcke nie automatisch werten. (bereits vorhanden: persistence.DataStore, ScoreManager wertet nur BlockPlaceEvent)
+- [x] Nur beim erstmaligen Start sichere Startposition erlauben; nach dem Start keine Teleport-Abkürzungen bieten. (0c95f2b, EntryTeleportManager)
+- [x] Außerhalb der Bauplätze normale Survival-Aktionen erlauben (Farmen, Wege, Brücken, Transport und Handel). (bereits vorhanden: ProtectionListener wirkt nur innerhalb von Bauplätzen)
+- [x] Lobby-/Eingangswelt unverändert lassen und niemals durch Contest-Welt-Löschung erfassen. (bereits vorhanden: WorldManager#isPrimaryWorld-Schutz)
 
-**Abnahme:** Mehrere Bauplätze liegen in derselben normalen Survival-Welt, können unterschiedliche Höhen besitzen und sind von Spielern ohne Teleport erreichbar.
+**Abnahme:** Mehrere Bauplätze liegen in derselben normalen Survival-Welt, können unterschiedliche Höhen besitzen und sind von Spielern ohne Teleport erreichbar. ✅ Live auf Spigot 26.3 verifiziert (0c95f2b, 0327707).
 
 ### 2. Grundstücksschutz
-- [ ] Bau-/Abbaurechte auf **eigene** Teammitglieder begrenzen; Besucher dürfen fremde Bauplätze betreten, aber nicht verändern.
-- [ ] Fremde Container-, Inventar- und Entity-Zugriffe verhindern; Hopper/Hopper-Minecarts testen.
-- [ ] Explosionen (inkl. TNT, Creeper, Wither und Betten), Feuer und Feuerausbreitung schützen.
-- [ ] Wasser-/Lavafluss und Kolbenbewegungen über Grundstücksgrenzen absichern.
-- [ ] Enderman-/Mob-Griefing, Blockphysik, Wachstum und sonstige indirekte Blockänderungen absichern.
-- [ ] Eigene manuelle Bauaktionen erlauben, aber auch den eigenen Bauplatz vor unkontrollierten Schäden schützen.
-- [ ] Konflikte mit anderen Plugins und privilegierten Adminaktionen prüfen.
+- [x] Bau-/Abbaurechte auf **eigene** Teammitglieder begrenzen; Besucher dürfen fremde Bauplätze betreten, aber nicht verändern. (bereits vorhanden)
+- [x] Fremde Container-, Inventar- und Entity-Zugriffe verhindern; Hopper/Hopper-Minecarts testen. (ProtectionListener-Erweiterung, InventoryOpenEvent/InventoryMoveItemEvent)
+- [x] Explosionen (inkl. TNT, Creeper, Wither und Betten), Feuer und Feuerausbreitung schützen. (bereits vorhanden)
+- [x] Wasser-/Lavafluss und Kolbenbewegungen über Grundstücksgrenzen absichern. (ProtectionListener-Erweiterung, BlockFromToEvent/BlockPistonExtend-/RetractEvent, live verifiziert)
+- [x] Enderman-/Mob-Griefing, Blockphysik, Wachstum und sonstige indirekte Blockänderungen absichern. (ProtectionListener-Erweiterung, EntityChangeBlockEvent/BlockSpreadEvent)
+- [x] Eigene manuelle Bauaktionen erlauben, aber auch den eigenen Bauplatz vor unkontrollierten Schäden schützen. (alle neuen Handler wirken unabhängig von Gruppenzugehörigkeit)
+- [ ] Konflikte mit anderen Plugins und privilegierten Adminaktionen prüfen. (keine automatisierte Prüfung möglich - laufende Beobachtung im Betrieb nötig)
 
 **Abnahme:** Fremde Spieler können besichtigen, aber weder direkt noch indirekt Punkte, Gebäude oder Lagerbestände anderer Teams beschädigen.
 
