@@ -1,106 +1,202 @@
-# Buildcontest – Regeln
+# Buildcontest – Regeln und technische Spezifikation
 
-## Ziel
+> **Status:** Zielregelwerk. Die beschriebenen Regeln sind Anforderungen an das Plugin; ihre Dokumentation bedeutet nicht, dass alle Funktionen bereits implementiert sind.
 
-Mehrere Gruppen spielen Survival und wetteifern darum, auf ihrem eigenen Bauplatz möglichst viele Punkte durch das Verbauen von Blöcken zu sammeln. Ressourcen werden in der gemeinsamen Survival-Welt gefarmt, verbaut wird ausschließlich auf dem eigenen Bauplatz.
+## 1. Ziel und Spielprinzip
 
-## Setup (Admin)
+Mehrere Gruppen treten in **einer gemeinsamen Survival-Welt** gegeneinander an. Jede Gruppe besitzt dort einen eigenen geschützten Bauplatz. Die Gruppen erkunden dieselbe Welt, sammeln Ressourcen, betreiben Farmen, handeln untereinander und bringen ihre Materialien **mit normalen Minecraft-Fortbewegungsmitteln** zu ihren Bauplätzen.
 
-Vor Spielstart konfiguriert ein Admin:
+Es gibt **keine separate Farmwelt und keine separate Bauwelt**. Außerhalb der Bauplätze gelten grundsätzlich normale Survival-Regeln. Gewertet werden ausschließlich gültig von Spielern platzierte, noch vorhandene und mit dem Fundament verbundene Blöcke innerhalb des **eigenen** Bauplatzes. Die Gruppe mit den meisten Materialpunkten gewinnt; eine Jury- oder Kreativitätswertung gibt es nicht.
 
-- Anzahl der Gruppen (Standard: 2)
-- Maximale Gruppengröße (Standard: konfigurierbar, z. B. 5 Spieler pro Gruppe)
-- Bauplatzgröße (Standard: 60×60 Blöcke – deutlich kleiner als ursprünglich angedacht, da 300×400 für ein zeitlich begrenztes Event zu groß ist; für Langzeit-Server-Projekte kann der Wert erhöht werden)
-- Mindest-/Maximalabstand zwischen Bauplätzen (200–500 Blöcke)
-- Spieldauer (optional, siehe „Spielablauf & Ende")
-- Die Block-Punktetabelle (siehe „Punktesystem")
+## 2. Welten und Fortbewegung
 
-Beim Start (`/bc start`) wird die Bauplatz-Welt komplett neu mit einem zufälligen Seed erzeugt – ein frisches, normal generiertes Terrain für jeden Contest, keine Wiederverwendung alter Baureste. Erst danach werden die Bauplätze automatisch im Weltraster verteilt, flach planiert (Vegetation entfernt, Oberfläche auf ein einheitliches Y-Level gebracht) und als rechteckige Grundfläche festgelegt; der Rest der Welt bleibt unverändertes, natürliches Terrain.
+- Die **Contest-Welt ist zugleich die gemeinsame Survival-Welt** mit sämtlichen Bauplätzen. Das Plugin erstellt beim Beginn eines **neuen** Contests eine frische Survival-Welt mit zufälligem Seed; bei Wiederaufnahme eines bestehenden Contests wird dessen Welt weiterverwendet.
+- Eine separate **Eingangs-/Lobbywelt** darf es für die Vorbereitung geben. Sie ist nicht die Farm- oder Bauwelt, wird nicht vom Contest-Neustart gelöscht und wird durch den Admin verwaltet.
+- Beim ersten Eintritt in den Contest dürfen Teilnehmer **einmalig** an einen sicheren Startpunkt bei ihrem Bauplatz gebracht werden, bevor die Wettkampfzeit läuft. Danach gibt es **keine Spieler-Teleports durch Buildcontest**: kein `/bc home`, `/bc plot`, `/bc survival` oder `/bc lobby` während RUNNING oder PAUSED. Die normale Fortbewegung zu Fuß, per Boot, Pferd, Minecart, Nether-Reise usw. ist Teil des Spiels.
+- Bei Logout, Tod und Wiederanmeldung gelten grundsätzlich normale Minecraft-Mechaniken. Buildcontest darf dabei keine Abkürzung zum Bauplatz schaffen; insbesondere darf ein Wiedereinstieg nicht automatisch dorthin teleportieren.
+- Administratoren können unabhängig davon ihre üblichen Moderations-/Rettungswerkzeuge verwenden; dies ist keine Spielerfunktion des Wettbewerbs.
+- Auch während RUNNING dürfen Gruppen außerhalb der Grundstücke Wege, Brücken, Minen, Farmen und andere Survival-Bauten errichten. Dafür gibt es keine Contestpunkte.
 
-Das gesamte Bauplatz-Raster liegt dabei immer durchgehend auf trockenem Land, nie im Wasser (Ozean/See): Ausgehend vom konfigurierten Mittelpunkt wird automatisch nach einem nahegelegenen, komplett trockenen Platz für alle Bauplätze gemeinsam gesucht. Der gemeinsame Y-Level orientiert sich an der tatsächlich vorgefundenen Geländehöhe an der Mitte des ersten Bauplatzes und weicht davon um höchstens 5 Blöcke nach unten (ausschachten) oder oben (weniger abtragen müssen) ab – ein Bauplatz liegt also immer nah am natürlichen Boden, nie tief in der Erde versenkt und nie erkennbar aufgeschüttet, und schwebt auch nie über einem Hohlraum (z. B. einer Höhle direkt unter der Oberfläche). Das gilt für alle Gruppen gleich – es gibt keinen Modus, in dem einzelne Bauplätze zufällig im Wasser und andere an Land liegen.
+## 3. Vorbereitung und Bauplätze
 
-Sobald der Contest startet, werden alle online Spieler automatisch in die Bauplatz-Welt teleportiert (Mitglieder einer Gruppe direkt zu ihrem eigenen Bauplatz); bei Spielende geht es für alle, die sich noch dort befinden, automatisch zurück in die Eingangswelt (die normale Server-Hauptwelt).
+Vor Spielstart sind konfigurierbar:
 
-Die Eingangswelt selbst wird – anders als die Bauplatz-Welt – vom Plugin nie neu erzeugt oder gelöscht: Der Admin gestaltet und pflegt sie eigenständig (empfohlen: eine flache, bei jedem Serverstart identische Welt), sie bleibt dauerhaft bestehen. Damit niemand dort in der Luft spawnt, korrigiert das Plugin beim Serverstart automatisch die Höhe ihres Weltspawns auf festen Boden.
+- Gruppenanzahl (Standard: 2) und maximale Gruppengröße (beispielsweise 5).
+- Bauplatzgröße (Standard: **60 × 60 Blöcke**).
+- Mindest-/Maximalabstand der Grundstücke (Standard: **200–500 Blöcke**); maßgeblich ist der kürzeste horizontale Abstand zwischen Grundstücksgrenzen.
+- Optionale Wettbewerbsdauer.
+- Blockwerte aus [`scoreboard-config.yml`](./scoreboard-config.yml).
+- Optionale Festlegung von Gruppen und Startpositionen.
 
-## Gruppen
+Für jede Gruppe wird genau ein rechteckiger Bauplatz im natürlich generierten Gelände ausgewählt. Die Plätze liegen an geeigneten **trockenen** Standorten und werden jeweils **lokal** auf eine passende, einheitliche Höhe planiert. **Verschiedene Bauplätze dürfen unterschiedliche Y-Level haben.** Dadurch muss nicht ein großes gemeinsames Gebiet auf derselben Höhe liegen. Wasserflächen und extreme Geländesprünge sind als Grundstücke ungeeignet; Hohlräume direkt unter dem geplanten Fundament müssen sicher verfüllt oder stabilisiert werden. Die jeweiligen Originalhöhen und die neu geschaffene Fundamentfläche werden gespeichert.
 
-- Jede Gruppe hat eine admin-konfigurierbare **maximale Gruppengröße**.
-- Die Zuweisung von Spielern zu Gruppen erfolgt auf **genau eine** der folgenden Arten (nicht gemischt, Admin legt sich pro Event fest):
-  1. **Freie Wahl:** Spieler wählen per Befehl `/bc join <gruppe>` selbst, solange die Gruppe noch nicht voll ist.
-  2. **Configfile:** Ein Admin trägt Minecraft-Namen fest einer Gruppe zu; Spieler können ihre Gruppe in diesem Modus nicht selbst wählen oder wechseln.
+Die Wertungsgrenze ist die rechteckige X/Z-Grundfläche des eigenen Bauplatzes. Vertikal gelten die normalen Unter- und Obergrenzen der Welt; außerhalb der X/Z-Grenze gibt es niemals Punkte.
 
-## Bauplätze
+**Vorhandene Weltblöcke** (einschließlich planiertem Fundament und natürlich vorkommenden Erzen) erhalten nie automatisch Punkte. Die Geländevorbereitung erfolgt vor der Wertung.
 
-- Pro Gruppe gibt es genau einen rechteckigen, flach planierten Bauplatz.
-- Bauplätze liegen 200–500 Blöcke voneinander entfernt.
-- Die Grundfläche (X/Z) ist die alleinige Grenze für die Wertung – siehe „Bauregeln".
+## 4. Gruppen und Handel
 
-## Bauregeln
+Pro Contest wird genau **ein** Beitrittsmodus festgelegt:
 
-- Gewertet werden nur Blöcke, deren X/Z-Position innerhalb der eigenen Bauplatz-Grundfläche liegt. Nach oben (Y) gibt es kein Limit außer der Welthöhengrenze.
-- Verbaute (gewertete) Blöcke müssen zusammenhängend sein und über andere gewertete Blöcke mit der planierten Bauplatz-Oberfläche verbunden sein (geprüft per Flood-Fill beim Platzieren, ausgehend von der beim Planieren gespeicherten Höhenkarte). Nicht verbundene Platzierungen werden abgelehnt oder zählen mit 0 Punkten.
-- Nicht gewertete Blöcke (reine Deko, z. B. Glas, Blumen o. ä., sofern nicht in der Punktetabelle enthalten) dürfen frei platziert werden, geben aber 0 Punkte.
+1. **Freie Wahl:** Spieler verwenden `/bc join <gruppe>`, solange Plätze frei sind.
+2. **Festzuweisung:** Ein Admin weist Spieler per Konfiguration oder `/bc assign` zu; normale Spieler können die Zuweisung nicht ändern.
 
-## Punktesystem
+Die dauerhafte Spieleridentität ist die **Minecraft-UUID**, der angezeigte Spielername dient nur zur Darstellung und Auflösung von Admin-Eingaben. Nach Contestbeginn sind Gruppenwechsel grundsätzlich gesperrt; ausschließlich ein Admin kann sie ausdrücklich durchführen. Dabei bleiben bereits registrierte Punkte und Blöcke der bisherigen Gruppe zugeordnet, damit kein Team Punkte durch einen Wechsel verliert oder erhält.
 
-Jeder Blocktyp hat einen Punktwert, der sich am Beschaffungs-/Verarbeitungsaufwand orientiert (seltener/aufwendiger zu farmen = mehr Punkte). Die vollständige, admin-konfigurierbare Tabelle liegt in [`scoreboard-config.yml`](./scoreboard-config.yml). Sie folgt einem siebenstufigen, grob verdoppelnden Tier-System:
+**Handel und Materialtausch zwischen Gruppen sind erlaubt.** Spieler können Ressourcen freiwillig austauschen. Bauplätze fremder Gruppen sind dennoch geschützt; ein Handel gewährt keine fremden Baurechte oder Containerrechte.
 
-| Tier | Punkte | Beispiele |
-|---|---|---|
-| T0 | 0 | Funktionale Blöcke (Redstone-Komponenten, Workstations, Container, Rails) und reine Dekoration (Teppich, Banner, Schild, Laub). Zählen grundsätzlich nicht, unabhängig vom Materialwert – Ausnahme: Beacon/Conduit (siehe T6) |
-| T1 | 1 | Erde, Sand, Stein, Holz, Wolle, Terracotta, Coal/Copper-Erz |
-| T2 | 3 | Steinziegel, Beton, Glas, Quarzblock, Kupfer-Block, Coal-Block, Obsidian |
-| T3 | 6 | Eisenerz/-block, Redstone-/Lapis-Erz/-block, Prismarine, Amethystblock |
-| T4 | 12 | Golderz/-block, Diamant-/Smaragderz (unverarbeitet), Froglight |
-| T5 | 25 | Diamantblock, Smaragdblock, Ancient Debris |
-| T6 (Cap) | 50 | Netheritblock, Beacon, Conduit, Dragon Egg, Shulker Box – bewusst gedeckelt, keine weitere Eskalation untereinander |
+## 5. Bauregeln und Verbindungsprüfung
 
-Zusätzliche Regeln:
+- Punkte erhalten nur **gültige Spielerplatzierungen** auf dem eigenen Bauplatz, bei denen der resultierende Block weiterhin vorhanden ist und den zugehörigen aktuellen Materialtyp aufweist.
+- Ein Block darf nur dann Punkte liefern, wenn er über eine Kette aus benachbarten **verbindenden Blöcken** mit der gespeicherten Bauplatz-Fundamentfläche verbunden ist.
+- Als Nachbarn zählen die **sechs gemeinsamen Blockflächen** (±X, ±Y, ±Z), nicht diagonale Kontakte.
+- Auch Materialtypen mit **0 Punkten** dürfen Teil einer Verbindung sein, beispielsweise Glas oder andere Dekoration. **Wertbar** und **verbindend** sind also unabhängige Eigenschaften.
+- Standardmäßig gelten platzierte feste Blöcke als verbindend; Flüssigkeiten, Luft, Feuer und ausdrücklich ausgeschlossene, nicht tragfähige Zustände verbinden nicht. Die verbindenden Materialien sollen konfigurierbar sein. Das gespeicherte Grundstücksfundament ist ein Anker, selbst wenn dessen Blöcke 0 Punkte bringen.
+- Ein wertbarer, aber momentan unverbundener Block zählt **0**, bis wieder eine Verbindung zum Fundament besteht. Unverbundene Platzierungen müssen deshalb nicht abgelehnt werden.
+- Nach Platzierung, Abbau, Zerstörung oder erlaubter Blockzustandsänderung werden betroffene Verbindungen aktualisiert. Beim Entfernen eines tragenden Blocks verlieren alle dadurch getrennten Blöcke ihre Punkte; bei Wiederverbindung werden die Punkte zurückgewonnen, **ohne** dass ein erneutes Platzieren erforderlich ist.
+- Für die Verbindung dürfen auch 0-Punkte-Blöcke auf dem eigenen Bauplatz berücksichtigt werden; außerhalb des Bauplatzes laufende Strukturen zählen **nicht** als Verbindung.
 
-- Natürliche Erz-Rohblöcke (z. B. Diamanterz direkt aus dem Abbau) zählen niedriger als der daraus hergestellte kompakte Block (z. B. Diamantblock) – weniger Aufwand als 9 Einheiten zu sammeln und zu verarbeiten.
-- Formvarianten (Stufen, Treppen, Wände, Zäune, Tore, Türen, Fallen) erben automatisch den Punktwert ihres Grundmaterials. Rein funktionale/informative Varianten (Knöpfe, Druckplatten, Schilder) bleiben immer bei 0 Punkten.
-- Alles, was nicht in `scoreboard-config.yml` gelistet ist, zählt automatisch 0 Punkte (`default_score`).
-- Der Punktestand einer Gruppe entspricht der Summe der Punktwerte **aktuell stehender** gewerteter Blöcke auf ihrem Bauplatz – nicht einer kumulativen Zählung aller jemals platzierten Blöcke.
-- Wird ein gewerteter Block abgebaut, wird sein Punktwert wieder vom Gruppen-Score abgezogen. Das verhindert, dass durch wiederholtes Platzieren/Abbauen desselben Blocks unbegrenzt Punkte erzeugt werden.
+Die Implementierung soll nicht bei jeder Platzierung den ganzen Bauplatz per Flood-Fill neu durchsuchen. Besonders beim Entfernen von Verbindungen ist eine gezielte Neuprüfung betroffener Komponenten nötig.
 
-## Scoreboard-Anzeige
+## 6. Punktesystem
 
-Jeder Spieler sieht permanent ein Sidebar-Scoreboard mit zwei Informationen:
+Punkte sollen den ungefähren **Beschaffungs- und Verarbeitungsaufwand** besser widerspiegeln. Die vollständige, verbindliche Blocktabelle befindet sich in [`scoreboard-config.yml`](./scoreboard-config.yml), nicht in dieser Beispielübersicht. Die bisherige grobe Tier-Einteilung dient weiter der Orientierung; **einzelne Materialien dürfen abgestufte Zwischenwerte** erhalten.
 
-- **Punktestand aller Gruppen**, sortiert nach Rang – für jeden Spieler identisch, unabhängig von der eigenen Gruppe.
-- **Eigener Beitrag**: wie viele der Punkte seiner Gruppe der Spieler selbst erzielt hat.
+| Material / Beispiel | Punkte |
+|---|---:|
+| Erde, Stein, normales Holz | 1 |
+| Steinziegel | 2 |
+| Glas | 2 |
+| Beton | 3 |
+| Eisenblock | 10 |
+| Goldblock | 20 |
+| Diamantblock | 40 |
+| Smaragdblock | 40 |
+| Netheritblock | 50 (Obergrenze) |
 
-Dazu wird pro platziertem gewerteten Block gespeichert, welcher Spieler ihn platziert hat. Der persönliche Beitrag entspricht – analog zum Gruppen-Score – der Summe der Punktwerte der **aktuell stehenden** Blöcke, die dieser Spieler selbst platziert hat:
+Weitere Grundsätze:
 
-- Baut irgendjemand einen gewerteten Block ab, verliert **der ursprüngliche Platzierer** diesen Punktwert aus seinem persönlichen Beitrag (nicht der Abbauende).
-- Daraus folgt die Invariante: Summe der persönlichen Beiträge aller Mitglieder einer Gruppe = Gruppen-Score.
-- Platziert ein Teammitglied an derselben Stelle einen neuen Block, geht der Beitrag auf diesen neuen Platzierer über. Da Teammitglieder sich gegenseitig nicht vor Abbau geschützt sind (siehe „Schutzmechanismen"), kann so theoretisch Beitrag zwischen Mitgliedern „umverteilt" werden – das ist eine bewusst akzeptierte Einschränkung des bestehenden Vertrauensmodells innerhalb der Gruppe, kein Exploit gegenüber anderen Gruppen.
+- **Maximal 50 Punkte pro Block.** Der Maximalwert gilt auch für ausdrücklich ausgezeichnete seltene Endgame-Blöcke.
+- Roh-Erze und kompakte Blöcke werden getrennt bewertet; die höhere Materialmenge eines kompakten Blocks soll stärker berücksichtigt werden.
+- Materialvarianten (Treppen, Stufen, Wände, Zäune, Türen usw.) übernehmen ihren Wert **nur gemäß den expliziten Vererbungs- und Ausnahmeregeln** der Konfiguration. Funktionale Varianten wie Knöpfe, Schilder und Druckplatten bleiben 0.
+- Funktionale Container zählen normalerweise 0. **Shulker-Boxen**, **Beacon** und **Conduit** sind ausdrücklich begründete Ausnahmen.
+- Nicht konfigurierte Materialien haben `default_score: 0`. Für Minecraft-Versionswechsel müssen neue Blocktypen geprüft werden.
+- Die Wertung ist **nicht kumulativ**: Sie entspricht der Summe aktuell stehender, gültig platzierter und verbundener Blöcke. Wird ein Block entfernt, ersetzt oder ungültig, entfällt sein Wert. Reines Wiederholen von Platzierung und Abbau erzeugt keinen dauerhaften Gewinn.
+- Änderungen an Punktwerten während RUNNING/PAUSED sind gesperrt; eine Änderung zwischen Wettbewerben darf nicht rückwirkend einen abgeschlossenen Endstand verändern.
 
-## Schutzmechanismen
+Die derzeitigen Werte sind eine **überarbeitete Startkonfiguration** und sollten anhand von Test-Contests weiter ausbalanciert werden. Die Aktualisierung der Tabelle allein implementiert noch keine neue Wertungslogik.
 
-- Blöcke auf einem Bauplatz können nicht von Spielern anderer Gruppen abgebaut oder überbaut werden.
-- Explosionen (TNT, Creeper, Betten etc.) und Feuerausbreitung werden an den Bauplatzgrenzen blockiert, damit Umgebungsschäden nicht auf fremde (oder eigene, bereits gewertete) Bauten übergreifen.
-- Innerhalb der eigenen Gruppe haben alle Mitglieder vollen Zugriff auf den eigenen Bauplatz (kein Schutz zwischen Teammitgliedern).
+## 7. Manipulationssichere Blockerfassung
 
-## Spielablauf & Ende
+Punkte werden **nicht** aus sämtlichen vorhandenen Weltblöcken rekonstruiert. Für jeden gültig gesetzten Block werden mindestens Contest-ID, Welt, Koordinaten, Material, Eigentümer-UUID, Gruppen-ID und Wertungsstatus gespeichert.
 
-- `/bc start` beginnt den Contest. Dabei wird die Bauplatz-Welt immer komplett neu mit einem zufälligen Seed erzeugt (siehe „Setup (Admin)") und alle Punktestände aus einem eventuell vorherigen Contest werden zurückgesetzt.
-- Der Admin kann optional eine feste Spieldauer konfigurieren, nach deren Ablauf der Contest automatisch endet.
-- Unabhängig davon kann der Admin den Contest jederzeit vorzeitig per `/bc end` beenden.
-- Nach dem Ende wird der Bauplatz eingefroren (kein weiteres Platzieren/Abbauen gewerteter Blöcke mehr möglich) und der Endstand sowie die Gewinnergruppe werden bekanntgegeben.
-- Die Bauplatz-Welt selbst bleibt nach dem Ende zunächst stehen, damit Admin und Spieler die fertigen Bauten noch begutachten können. Sie wird gelöscht entweder:
-  - manuell durch den Admin per `/bc deleteworld`, oder
-  - automatisch direkt im Anschluss an `/bc end`, wenn dies in der Konfiguration (`game.auto-delete-world-on-end`) aktiviert ist.
-  - Spätestens beim nächsten `/bc start` wird die alte Welt ohnehin komplett ersetzt.
+- Nur normale, zugelassene **Spielerplatzierungen** können neue Wertungsdatensätze erstellen.
+- Natürlich generierte Blöcke, WorldEdit- und sonstige Plugin-/Command-Änderungen, Enderman-Platzierungen, automatisch generierter Cobblestone usw. erzeugen **keine neuen** Punktedatensätze.
+- Kolbenbewegungen, Explosionen, Flüssigkeiten, Wachstum und Blocktransformationen dürfen weder Datensätze duplizieren noch bestehende Punkte trotz geänderter Weltlage fälschlich erhalten. Änderungen werden unterbunden oder korrekt mit dem Tracking abgeglichen.
+- Ein einmal registrierter Block darf nach einem Austausch nicht unter falschem Material oder falschem Platzierer weiterzählen.
+- Die **tatsächliche Welt** und die gespeicherten Metadaten müssen konsistent gehalten werden; nach Absturz/Neustart ist eine Wiederherstellung beziehungsweise Validierung vorzusehen.
 
-## Admin-Befehle (Übersicht)
+Technische Trennung: **Block-Tracking** registriert Herkunft, Bestand und Verbindungsstatus; **Scoring** berechnet daraus die Wertung anhand der konfigurierten Tabelle.
 
-- `/bc setgroups <n>` – Anzahl der Gruppen festlegen
-- `/bc setgroupsize <n>` – maximale Gruppengröße festlegen
-- `/bc setplotsize <x> <z>` – Bauplatzgröße festlegen
-- `/bc setdistance <min> <max>` – Mindest-/Maximalabstand zwischen Bauplätzen
-- `/bc setscore <block> <punkte>` – Punktwert für einen Blocktyp setzen
-- `/bc assign <spieler> <gruppe>` – Spieler per Configfile/Befehl einer Gruppe zuweisen
-- `/bc start` / `/bc end` – Contest starten/beenden
-- `/bc reload` – Konfiguration neu laden
+## 8. Persönliche Beiträge und Statistiken
+
+- Für jeden Spieler zeigt das System dessen **persönlichen Bau-Beitrag** an: Summe der aktuell gültigen und verbundenen, von diesem Spieler gesetzten Punkteblöcke auf dem zugeordneten Teamgrundstück.
+- Entfernt ein beliebiges Teammitglied einen Block, verliert **der ursprüngliche Platzierer** den Beitrag. Ersetzt jemand einen Block, gehört der neue Platzier-Beitrag dem neuen Platzierer.
+- Die Summe der aktuellen persönlichen Bau-Beiträge einer Gruppe ist gleich deren aktuellem Gruppenscore, auch nach einem administrativen Teamwechsel; die frühere Teamzuordnung der gesetzten Blöcke bleibt maßgeblich.
+- Separat werden **Aktivitätsstatistiken** erfasst, beispielsweise abgebaute Ressourcen, gültige Platzierungen und aktive Spielzeit. Diese Werte sind **informativ und geben keine zusätzlichen Gruppenpunkte**. Beim Ressourcenabbau muss doppeltes Zählen durch wiederholtes Setzen und Abbauen vermieden werden; eine solche Statistik ist nicht automatisch ein verlässliches Maß der Teamleistung.
+
+## 9. Anzeige
+
+Jeder Teilnehmer sieht ein Live-Sidebar-Scoreboard mit:
+
+- Verbleibender Wettkampfzeit (bei unbegrenzter Dauer entsprechend „ohne Zeitlimit“).
+- Punktestand **aller Gruppen** in Rangfolge, bei Gleichstand mit gleichem Rang.
+- Eigener Gruppe und eigenem aktuellem Bau-Beitrag.
+
+Weiterführende Aktivitätsstatistiken sind über `/bc stats` abrufbar. Die Anzeige soll performant aktualisiert werden und Scoreboard-Einträge bei großen Gruppenanzahlen sinnvoll begrenzen. Meldungen zu Führungswechseln dürfen optional und gedrosselt angezeigt werden.
+
+## 10. Schutzmechanismen
+
+**Fremde Gruppen dürfen Bauplätze betreten und besichtigen**, dort jedoch keine Blöcke setzen/abbauen/überbauen, keine fremden Container öffnen und keine geschützten Objekte verändern. Teams besitzen innerhalb ihres eigenen Grundstücks gemeinsame Baurechte; zwischen Mitgliedern desselben Teams besteht kein privater Blockschutz.
+
+Der Schutz muss auch **indirekte Schäden** zuverlässig abwehren, insbesondere:
+
+- Explosionen (TNT, Creeper, Wither, Betten usw.), Feuer und Brandausbreitung.
+- Wasser- und Lavafluss über Grundstücksgrenzen, unzulässige Flüssigkeitsänderungen.
+- Kolben und bewegte Blöcke über Grenzen.
+- Enderman-/Mob-Griefing, Entity-Interaktionen und vergleichbare Blockänderungen.
+- Hopper, Hopper-Minecarts und andere Wege zum Zugriff auf fremde Container/Items.
+- Wachstum, Blockphysik und Änderungen durch andere Plugins, soweit sie das geschützte Grundstück treffen.
+
+Der Schutz gilt auch gegen Schäden **innerhalb** des eigenen Grundstücks durch Explosionen, Feuer oder unkontrollierte Mechaniken. Legitime manuelle Änderungen durch eigene Teammitglieder bleiben möglich. Außerhalb der Grundstücke bleiben die normalen Survival-Regeln maßgeblich.
+
+## 11. Ablauf, Unterbrechung und Spielende
+
+Das System hat folgende persistente Zustände:
+
+| Zustand | Bedeutung |
+|---|---|
+| SETUP | Admin stellt Regeln und Teams ein |
+| LOBBY | Teilnehmer melden sich an / wählen ihre Gruppe |
+| PREPARING | Gemeinsame Survival-Welt und Bauplätze werden vorbereitet |
+| RUNNING | Spiel und Wertung laufen |
+| PAUSED | Admin hat den Contest angehalten; keine neuen Punkte oder Aktivitätsfortschritte, Timer steht |
+| FINISHED | Endstand eingefroren, Bauten dürfen besichtigt werden |
+
+- `/bc start` startet **einen neuen** Contest aus SETUP/LOBBY nach erfolgreicher Vorbereitung. Ein bereits laufender oder pausierter Contest darf damit **nicht** überschrieben werden.
+- Die konfigurierte Spieldauer läuft nur während RUNNING. `/bc pause` stoppt den Timer und die wettbewerbsrelevanten Aktionen; `/bc resume` setzt denselben Contest mit allen Punkten und derselben Welt fort.
+- Während PAUSED sind Blockplatzierung/-abbau auf Bauplätzen und wettbewerbsrelevantes Farmen/Handeln zu unterbinden, damit keine Gruppe unfaire Vorteile erhält. Technisch kann dafür die gesamte Contest-Welt gegenüber Spieleraktionen eingefroren werden; Admin-Wartungsmaßnahmen bleiben möglich.
+- Nach Serverneustart muss der vollständige Zustand inklusive **Welt, Teamzuordnung, Block-Tracking, Punkten, Timer und Pause-Status** wiederhergestellt werden. Der Timer darf während des Offline-Zustands nicht ungewollt weiterlaufen.
+- Bei Ablauf der Zeit oder `/bc end` wird FINISHED erreicht: Endstand und alle punktrelevanten Daten werden unveränderlich gespeichert. Die Bauplätze bleiben zum Anschauen erhalten, dürfen von Spielern aber nicht mehr verändert werden.
+- Bei gleicher Punktzahl gibt es **gleichplatzierte Gewinner**, keinen willkürlichen Stichentscheid.
+- **Nur Ergebnisse und Statistiken werden archiviert, kein Weltbackup.** Die abgeschlossene Contest-Welt kann bis zum nächsten Wettbewerb zur Besichtigung verbleiben, wird aber bei einem bewusst gestarteten neuen Contest ersetzt.
+- Vor dem Ersetzen der bisherigen Welt muss der Admin ausdrücklich bestätigen, dass deren Bauwerke **nicht** erhalten bleiben. `/bc deleteworld` erfordert ebenfalls eine ausdrückliche Bestätigung. Die Lobby-/Eingangswelt darf nie gelöscht werden.
+- Die alte Option `game.auto-delete-world-on-end` ist **standardmäßig deaktiviert**; eine automatische Löschung unmittelbar nach `/bc end` widerspräche der gewünschten Besichtigungsphase und soll nicht ohne explizite Admin-Entscheidung passieren.
+
+## 12. Datenhaltung und Zuverlässigkeit
+
+Contest-ID, Team-/Spieler-UUIDs, Plot-Koordinaten, Fundamentanker, einzelne wertbare Blockeinträge, Aktivitätsstatistiken, Endstände und Zustands-/Timerdaten sind persistent abzulegen (z. B. SQLite).
+
+- Punktänderungen werden effizient ereignisbasiert verarbeitet; teure Welt-Scans werden vermieden.
+- Speicherung und Weltänderung sind möglichst ausfallsicher zu koordinieren. Nach Crash/Reboot darf das Plugin keine Phantom-Punkte vergeben.
+- Admin-`reload` darf im aktiven Wettbewerb keine spielentscheidenden Regeln unbemerkt verändern.
+- Konfiguration, Plugin-Implementierung und Minecraft-Materialnamen müssen zur eingesetzten Serverversion passen.
+- Die gespeicherten Resultate bleiben auch nach dem Löschen der Contest-Welt lesbar.
+
+## 13. Befehle und Berechtigungen
+
+**Spielerbefehle:**
+
+| Befehl | Bedeutung |
+|---|---|
+| `/bc help` | Hilfe und erlaubte Befehle |
+| `/bc status` | Contestphase und Restzeit |
+| `/bc teams` | Gruppenübersicht |
+| `/bc join <gruppe>` | Gruppe in Modus „freie Wahl“ auswählen, vor Start |
+| `/bc leave` | Gruppe nur vor Start verlassen, sofern frei wählbar |
+| `/bc top` | Rangliste |
+| `/bc stats [spieler]` | Bau-Beitrag und separate Aktivitätsstatistiken |
+| `/bc time` | Restzeit |
+
+**Adminbefehle:**
+
+| Befehl | Bedeutung |
+|---|---|
+| `/bc setgroups <n>` | Gruppenanzahl |
+| `/bc setgroupsize <n>` | Gruppengröße |
+| `/bc setplotsize <x> <z>` | Plot-Größe |
+| `/bc setdistance <min> <max>` | Plotabstände |
+| `/bc setscore <block> <punkte>` | Materialwertung (nur vor Start) |
+| `/bc assign <spieler> <gruppe>` | Festzuweisung/Adminwechsel |
+| `/bc start` | Neuen Contest beginnen; bestehenden nicht überschreiben |
+| `/bc pause` / `/bc resume` | Aktiven Contest pausieren / fortsetzen |
+| `/bc end` | Contest beenden |
+| `/bc results` | Gespeicherte Ergebnisse ansehen |
+| `/bc deleteworld` | Abgeschlossene Contest-Welt nach Bestätigung löschen |
+| `/bc reload` | Zulässige Konfiguration neu laden |
+
+Alle Adminbefehle benötigen gesonderte Permissions. **Spieler-Teleportbefehle gehören bewusst nicht zum Contest.**
+
+## 14. Umsetzungshinweis
+
+Dieses Dokument beschreibt die **vereinbarten Spielregeln und die gewünschte Zielimplementierung**. Noch nicht implementierte Funktionen müssen in der Entwicklung ergänzt und getestet werden. Besonders kritisch sind: Welt-Lebenszyklus ohne Datenverlust, indirekter Plot-Schutz, persistente Zustandsmaschine, korrektes Block-Tracking samt Verbindungsprüfung und die Leistungsfähigkeit der Punkteberechnung.
