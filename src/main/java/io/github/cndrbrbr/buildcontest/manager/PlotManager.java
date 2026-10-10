@@ -57,6 +57,11 @@ public final class PlotManager {
     private static final int MAX_EXCAVATION_DEPTH = 5;
     /** Sicherheitsgrenze, falls {@link #flatten} wegen einer Hoehle immer tiefer aufgefuellt werden muss. */
     private static final int MAX_FILL_SAFETY_DEPTH = 40;
+    /** Abstand der Beacon-Markierung von der Bauplatzkante, siehe {@link #placeBeaconMarker}. */
+    private static final int BEACON_MARKER_OFFSET = 3;
+    /** Wie viele Bloecke oberhalb der Markierung freigeraeumt werden, damit der Beacon-Strahl sichtbar ist. */
+    private static final int BEACON_CLEAR_HEIGHT = 6;
+    private static final Material BEACON_BASE_MATERIAL = Material.IRON_BLOCK;
     private static final int[][] LAND_SEARCH_DIRECTIONS = {
             {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
     };
@@ -132,6 +137,7 @@ public final class PlotManager {
             plotsByGroup.put(group.getId(), plot);
             group.setPlot(plot);
             flatten(plot, world);
+            placeBeaconMarker(world, plot);
             if (firstPlot == null) {
                 firstPlot = plot;
             }
@@ -364,6 +370,34 @@ public final class PlotManager {
                 }
             }
         }
+    }
+
+    /**
+     * Stellt direkt ausserhalb der Suedkante des Bauplatzes einen aktiven
+     * Beacon auf eine kleine 3x3-Eisenblock-Pyramide, damit der Bauplatz
+     * schon von weitem am Lichtstrahl erkennbar ist. Die Markierung steht
+     * bewusst AUSSERHALB der Bauplatzgrenzen (siehe Plot#containsColumn) und
+     * zaehlt deshalb nicht zur Wertung. Nutzt die tatsaechliche lokale
+     * Gelaendehoehe an der Markierungsposition (nicht den surfaceY des
+     * Bauplatzes selbst), da das Gelaende direkt dahinter von der Bauplatz-
+     * Planierung unberuehrt bleibt und abweichend hoch/tief liegen kann.
+     */
+    private void placeBeaconMarker(World world, Plot plot) {
+        int centerX = (plot.getMinX() + plot.getMaxX()) / 2;
+        int baseZ = plot.getMaxZ() + BEACON_MARKER_OFFSET;
+        int groundY = world.getHighestBlockYAt(centerX, baseZ, HeightMap.MOTION_BLOCKING_NO_LEAVES);
+
+        for (int dx = -1; dx <= 1; dx++) {
+            for (int dz = -1; dz <= 1; dz++) {
+                int x = centerX + dx;
+                int z = baseZ + dz;
+                world.getBlockAt(x, groundY, z).setType(BEACON_BASE_MATERIAL, false);
+                for (int y = groundY + 1; y <= groundY + BEACON_CLEAR_HEIGHT; y++) {
+                    world.getBlockAt(x, y, z).setType(Material.AIR, false);
+                }
+            }
+        }
+        world.getBlockAt(centerX, groundY + 1, baseZ).setType(Material.BEACON, false);
     }
 
     /** Fuer die Persistenz (siehe persistence.DataStore): aktueller Stand ohne erneutes Planieren. */

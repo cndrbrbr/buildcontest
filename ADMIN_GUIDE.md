@@ -109,6 +109,10 @@ rules.md#punktesystem). Eigene Werte setzen:
    bei `/bc join`/`/bc assign` bzw. beim ersten Einloggen. Danach bietet das Plugin bewusst
    **keine** weiteren Teleport-Abkürzungen mehr an (kein `/bc tp` o. ä.) – normale Fortbewegung
    (zu Fuß, Boot, Pferd, Minecart, Nether …) ist Teil des Spiels.
+
+   Direkt außerhalb jeder Bauplatz-Südkante steht automatisch ein aktiver Beacon auf einer kleinen
+   Eisenblock-Pyramide – rein visuelle Orientierungshilfe, zählt nicht zur Wertung (liegt außerhalb
+   der Bauplatzgrenzen).
 4. **Laufenlassen**: Scoreboard, Schutzmechanismen und Punktewertung laufen automatisch (siehe
    rules.md#bauregeln, #schutzmechanismen, #scoreboard-anzeige).
 5. **Ende**:

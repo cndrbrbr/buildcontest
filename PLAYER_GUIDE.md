@@ -37,6 +37,8 @@ eigene Gruppe mit eigenem Bauplatz – ihr müsst nichts wählen, der Contest st
 - Euer Bauplatz ist eine rechteckige, flach planierte Fläche auf eurer eigenen, lokal passenden
   Höhe – andere Gruppen können auf einer anderen Höhe liegen. Nach oben (Y) gibt es **kein
   Limit**.
+- Direkt neben eurem Bauplatz markiert ein leuchtender Beacon die Position – so findet ihr euren
+  Bauplatz auch von weitem wieder.
 - Gewertet werden nur Blöcke, deren X/Z-Position innerhalb eurer Bauplatz-Grundfläche liegt.
 - Verbaute Blöcke müssen **zusammenhängend** sein und über andere gewertete Blöcke mit der
   planierten Oberfläche verbunden sein. Schwebende/unverbundene Platzierungen werden abgelehnt.
