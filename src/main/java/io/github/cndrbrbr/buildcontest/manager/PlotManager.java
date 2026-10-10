@@ -111,6 +111,16 @@ public final class PlotManager {
             group.setPlot(plot);
             flatten(plot, world);
         }
+
+        // Der von Minecraft bei der Welterzeugung automatisch gewaehlte
+        // Weltspawn liegt VOR dem Ausschachten der Bauplaetze und kann in der
+        // Luft/auf einem Huegel landen - Spieler ohne eigenes Bett wuerden
+        // dort wieder aufwachen. Stattdessen explizit auf die (garantiert
+        // flach ausgehobene) Mitte des ersten Bauplatzes setzen.
+        Plot spawnPlot = layout.get(0);
+        int spawnX = (spawnPlot.getMinX() + spawnPlot.getMaxX()) / 2;
+        int spawnZ = (spawnPlot.getMinZ() + spawnPlot.getMaxZ()) / 2;
+        world.setSpawnLocation(spawnX, spawnPlot.getSurfaceY() + 1, spawnZ);
     }
 
     /**
