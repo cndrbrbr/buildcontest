@@ -1,6 +1,7 @@
 package io.github.cndrbrbr.buildcontest.listener;
 
 import io.github.cndrbrbr.buildcontest.config.MainConfig;
+import io.github.cndrbrbr.buildcontest.manager.EntryTeleportManager;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
 import org.bukkit.Bukkit;
@@ -17,12 +18,14 @@ public final class PlayerConnectionListener implements Listener {
     private final MainConfig mainConfig;
     private final GroupManager groupManager;
     private final ScoreboardManager scoreboardManager;
+    private final EntryTeleportManager entryTeleportManager;
 
     public PlayerConnectionListener(MainConfig mainConfig, GroupManager groupManager,
-                                     ScoreboardManager scoreboardManager) {
+                                     ScoreboardManager scoreboardManager, EntryTeleportManager entryTeleportManager) {
         this.mainConfig = mainConfig;
         this.groupManager = groupManager;
         this.scoreboardManager = scoreboardManager;
+        this.entryTeleportManager = entryTeleportManager;
     }
 
     @EventHandler
@@ -45,6 +48,11 @@ public final class PlayerConnectionListener implements Listener {
         if (player.getWorld().equals(primaryWorld)) {
             player.teleport(primaryWorld.getSpawnLocation());
         }
+
+        // Erstmaliger Eintritt in einen laufenden Contest (z. B. per
+        // CONFIG-Zuweisung gerade oben aufgeloest) - danach keine
+        // Teleport-Abkuerzungen mehr, siehe EntryTeleportManager.
+        entryTeleportManager.teleportIfFirstEntry(player);
 
         scoreboardManager.setup(player);
     }

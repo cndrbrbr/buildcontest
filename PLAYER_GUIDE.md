@@ -18,8 +18,10 @@ Je nach Server-Einstellung gibt es zwei Modi (euer Admin sagt euch, welcher akti
 - **Feste Zuweisung**: Der Admin trägt euch per Konfiguration oder `/bc assign` einer Gruppe zu –
   hier müsst ihr nichts selbst tun.
 
-Sobald der Contest läuft, bringt euch `/bc tp` als Gruppe gemeinsam zu eurem Bauplatz (alle online
-Mitglieder werden teleportiert).
+Sobald ihr einer Gruppe zugeordnet seid und der Contest läuft, bringt euch das Plugin **einmalig**
+automatisch zu einem sicheren Startpunkt bei eurem Bauplatz. Danach gibt es bewusst **keine**
+weiteren Teleport-Befehle mehr – zu eurem Bauplatz (oder woanders hin) kommt ihr zu Fuß, per Boot,
+Pferd, Minecart usw., ganz normales Survival-Gameplay.
 
 **Im Automatikmodus** (Rot gegen Blau) läuft das anders: Ihr bekommt in der Eingangswelt einen
 roten und einen blauen Wolle-"Ball" ins Inventar. Benutzt den Ball eurer Wahl (Rechtsklick), um dem
@@ -29,7 +31,8 @@ startet der Contest automatisch.
 
 ## Bauen
 
-- Euer Bauplatz ist eine rechteckige, flach planierte Fläche. Nach oben (Y) gibt es **kein
+- Euer Bauplatz ist eine rechteckige, flach planierte Fläche auf eurer eigenen, lokal passenden
+  Höhe – andere Gruppen können auf einer anderen Höhe liegen. Nach oben (Y) gibt es **kein
   Limit**.
 - Gewertet werden nur Blöcke, deren X/Z-Position innerhalb eurer Bauplatz-Grundfläche liegt.
 - Verbaute Blöcke müssen **zusammenhängend** sein und über andere gewertete Blöcke mit der

@@ -31,14 +31,21 @@ import java.util.OptionalInt;
  * ("Mindest-/Maximalabstand") nicht notwendig.
  *
  * Der konfigurierte Mittelpunkt (plots.center-x/-z) ist dabei nur ein
- * STARTPUNKT fuer die Suche: da die Bauplatz-Welt bei jedem Contest neu mit
- * zufaelligem Seed erzeugt wird (siehe WorldManager), kann an dieser Stelle
- * Wasser (Ozean/See) liegen. {@link #findLandAnchor} sucht deshalb
+ * STARTPUNKT fuer die Suche: da die Bauplatz-Welt bei jedem NEUEN Contest neu
+ * mit zufaelligem Seed erzeugt wird (siehe WorldManager), kann an dieser
+ * Stelle Wasser (Ozean/See) liegen. {@link #findLandAnchor} sucht deshalb
  * automatisch einen nahegelegenen, durchgehend trockenen Platz fuer das
- * GESAMTE Bauplatz-Raster und leitet den gemeinsamen Y-Level daraus ab,
- * statt den festen config.yml-Wert fuer alle Gruppen gleich zu verwenden -
- * ein Bauplatz im Wasser waere sonst zufaellig nur fuer einzelne Gruppen ein
- * Nachteil (siehe rules.md#setup-admin).
+ * GESAMTE Bauplatz-Raster (ein Bauplatz im Wasser waere sonst zufaellig nur
+ * fuer einzelne Gruppen ein Nachteil).
+ *
+ * Der tatsaechliche Y-Level wird aber NICHT fuer alle Gruppen gemeinsam aus
+ * diesem groben Anker uebernommen: jeder Bauplatz wird anhand seiner EIGENEN
+ * vier Eckpunkte individuell planiert (siehe {@link #determinePlotSurfaceY}),
+ * da verschiedene Bauplaetze unterschiedliche Y-Level haben duerfen/sollen
+ * (siehe rules.md#bauplaetze: "Verschiedene Bauplätze dürfen unterschiedliche
+ * Y-Level haben"). Der grobe Anker dient nur noch als Fallback, falls ein
+ * einzelner Bauplatz keinen durchgehend trockenen eigenen Boden hat, und als
+ * Ausgangspunkt fuer den Weltspawn.
  */
 public final class PlotManager {
 
@@ -102,20 +109,32 @@ public final class PlotManager {
                     return new LandAnchor(mainConfig.getCenterX(), mainConfig.getCenterZ(), mainConfig.getSurfaceY());
                 });
 
+        // computeGridLayout liefert hier nur die X/Z-Aufteilung; der mitgegebene
+        // surfaceY ist nur ein Platzhalter und wird unten je Bauplatz einzeln
+        // ueberschrieben (siehe Klassen-Javadoc).
         List<Plot> layout = computeGridLayout(groupList.size(), sizeX, sizeZ, gap,
                 anchor.centerX(), anchor.centerZ(), anchor.surfaceY(), worldName);
 
         plotsByGroup.clear();
+        Plot firstPlot = null;
         for (int i = 0; i < groupList.size(); i++) {
             Group group = groupList.get(i);
             // computeGridLayout kennt keine Gruppen-IDs, also hier zuordnen.
             Plot template = layout.get(i);
+            int surfaceY = determinePlotSurfaceY(world, template).orElseGet(() -> {
+                plugin.getLogger().warning("Bauplatz von Gruppe " + group.getId() + " hat keinen durchgehend "
+                        + "trockenen eigenen Boden - verwende den gemeinsamen Anker-Y-Level als Rueckfalloption, "
+                        + "der Bauplatz liegt moeglicherweise im Wasser.");
+                return anchor.surfaceY();
+            });
             Plot plot = new Plot(group.getId(), template.getWorldName(),
-                    template.getMinX(), template.getMinZ(), template.getMaxX(), template.getMaxZ(),
-                    template.getSurfaceY());
+                    template.getMinX(), template.getMinZ(), template.getMaxX(), template.getMaxZ(), surfaceY);
             plotsByGroup.put(group.getId(), plot);
             group.setPlot(plot);
             flatten(plot, world);
+            if (firstPlot == null) {
+                firstPlot = plot;
+            }
         }
 
         // Der von Minecraft bei der Welterzeugung automatisch gewaehlte
@@ -123,10 +142,9 @@ public final class PlotManager {
         // Luft/auf einem Huegel landen - Spieler ohne eigenes Bett wuerden
         // dort wieder aufwachen. Stattdessen explizit auf die (garantiert
         // flach ausgehobene) Mitte des ersten Bauplatzes setzen.
-        Plot spawnPlot = layout.get(0);
-        int spawnX = (spawnPlot.getMinX() + spawnPlot.getMaxX()) / 2;
-        int spawnZ = (spawnPlot.getMinZ() + spawnPlot.getMaxZ()) / 2;
-        world.setSpawnLocation(spawnX, spawnPlot.getSurfaceY() + 1, spawnZ);
+        int spawnX = (firstPlot.getMinX() + firstPlot.getMaxX()) / 2;
+        int spawnZ = (firstPlot.getMinZ() + firstPlot.getMaxZ()) / 2;
+        world.setSpawnLocation(spawnX, firstPlot.getSurfaceY() + 1, spawnZ);
     }
 
     /**
@@ -221,51 +239,78 @@ public final class PlotManager {
     }
 
     /**
-     * Prueft die vier Eckpunkte des Bauplatz-Rasters UND die Mitte des
-     * ERSTEN Bauplatzes (nicht die geometrische Mitte des Gesamtrasters - die
-     * faellt z. B. bei zwei Gruppen in der Luecke zwischen den Bauplaetzen
-     * und waere damit kein sinnvoller Referenzpunkt): liegt an JEDEM Punkt
-     * Wasser (Hoehe inkl. Fluessigkeiten > tatsaechlicher Boden), gilt die
-     * Position als ungeeignet. Referenz-"Erdlevel" ist der Bodenpunkt an der
-     * Mitte des ersten Bauplatzes - derselbe Punkt, auf den auch der
-     * Weltspawn gesetzt wird (siehe {@link #generatePlots}). Der gemeinsame
-     * surfaceY bleibt davon ausgehend innerhalb von
-     * +/- {@link #MAX_EXCAVATION_DEPTH} Bloecken: liegt eine Ecke tiefer,
-     * wird surfaceY um bis zu diesen Betrag abgesenkt (ausschachten); liegt
-     * eine Ecke hoeher (z. B. ein Huegel), wird surfaceY um bis zu diesen
-     * Betrag angehoben (dort muss dann weniger abgetragen werden). Die
-     * Referenzstelle selbst wird dabei ggf. leicht aufgefuellt oder
-     * abgetragen, aber nie mehr als diese Spanne (siehe rules.md#bauplaetze:
-     * Bauplaetze liegen immer nahe am natuerlichen Boden, nicht tief in der
-     * Erde und nicht erkennbar aufgeschuettet).
-     *
-     * Performance: {@code getHighestBlockYAt} erzwingt synchrones Laden/
-     * Generieren des jeweiligen Chunks auf dem Hauptthread - bei vielen
-     * Fehlversuchen (z. B. grosser Ozean) kann das den Server fuer Sekunden
-     * einfrieren. Deshalb wird zuerst NUR die Mitte des ersten Bauplatzes
-     * geprueft; liegt dort schon Wasser (der haeufigste Fall in einem
-     * Ozean-Seed), werden die vier teureren Eckpunkt-Abfragen gar nicht
-     * erst ausgefuehrt.
+     * Grobe Verfuegbarkeitspruefung fuer das GESAMTE Bauplatz-Raster (siehe
+     * {@link #findLandAnchor}): prueft die vier Eckpunkte des Rasters UND die
+     * Mitte des ERSTEN Bauplatzes (nicht die geometrische Mitte des
+     * Gesamtrasters - die faellt z. B. bei zwei Gruppen in der Luecke
+     * zwischen den Bauplaetzen und waere damit kein sinnvoller
+     * Referenzpunkt). Der zurueckgegebene Y-Level ist nur ein grober Anker/
+     * Fallback - die tatsaechliche Planierung je Bauplatz erfolgt individuell
+     * in {@link #determinePlotSurfaceY}.
      */
     private OptionalInt checkAllLand(World world, int centerX, int centerZ, int halfWidth, int halfDepth,
                                       int sizeX, int sizeZ) {
         int plot1X = centerX - halfWidth + sizeX / 2;
         int plot1Z = centerZ - halfDepth + sizeZ / 2;
-        int referenceGround = world.getHighestBlockYAt(plot1X, plot1Z, HeightMap.OCEAN_FLOOR);
-        int referenceSurface = world.getHighestBlockYAt(plot1X, plot1Z, HeightMap.MOTION_BLOCKING_NO_LEAVES);
-        if (referenceSurface > referenceGround) {
-            return OptionalInt.empty();
-        }
-
         int[][] corners = {
                 {centerX - halfWidth, centerZ - halfDepth},
                 {centerX + halfWidth, centerZ - halfDepth},
                 {centerX - halfWidth, centerZ + halfDepth},
                 {centerX + halfWidth, centerZ + halfDepth},
         };
+        return evaluateGround(world, plot1X, plot1Z, corners);
+    }
+
+    /**
+     * Bestimmt den INDIVIDUELLEN Y-Level eines einzelnen Bauplatzes anhand
+     * seiner eigenen vier Eckpunkte und seiner eigenen Mitte als Referenz
+     * (siehe rules.md#bauplaetze: "Verschiedene Bauplätze dürfen
+     * unterschiedliche Y-Level haben") - anders als {@link #checkAllLand}
+     * (das nur grob die Lage des GESAMTEN Rasters z. B. gegen einen Ozean
+     * prueft) wird hier jeder Bauplatz unabhaengig von den anderen planiert,
+     * jeder darf also seine eigene, lokal passende Hoehe bekommen.
+     */
+    private OptionalInt determinePlotSurfaceY(World world, Plot template) {
+        int centerX = (template.getMinX() + template.getMaxX()) / 2;
+        int centerZ = (template.getMinZ() + template.getMaxZ()) / 2;
+        int[][] corners = {
+                {template.getMinX(), template.getMinZ()},
+                {template.getMaxX(), template.getMinZ()},
+                {template.getMinX(), template.getMaxZ()},
+                {template.getMaxX(), template.getMaxZ()},
+        };
+        return evaluateGround(world, centerX, centerZ, corners);
+    }
+
+    /**
+     * Liegt an der Referenzstelle ODER einem der uebergebenen Punkte Wasser
+     * (Hoehe inkl. Fluessigkeiten &gt; tatsaechlicher Boden), gilt die
+     * Flaeche als ungeeignet. Der zurueckgegebene surfaceY bleibt ausgehend
+     * vom Referenzpunkt innerhalb von +/- {@link #MAX_EXCAVATION_DEPTH}
+     * Bloecken: liegt ein Punkt tiefer, wird surfaceY um bis zu diesen Betrag
+     * abgesenkt (ausschachten); liegt ein Punkt hoeher (z. B. ein Huegel),
+     * wird surfaceY um bis zu diesen Betrag angehoben (dort muss dann
+     * weniger abgetragen werden) - siehe rules.md#bauplaetze: Bauplaetze
+     * liegen immer nahe am natuerlichen Boden, nicht tief in der Erde und
+     * nicht erkennbar aufgeschuettet.
+     *
+     * Performance: {@code getHighestBlockYAt} erzwingt synchrones Laden/
+     * Generieren des jeweiligen Chunks auf dem Hauptthread - bei vielen
+     * Fehlversuchen (z. B. grosser Ozean) kann das den Server fuer Sekunden
+     * einfrieren. Deshalb wird zuerst NUR die Referenzstelle geprueft; liegt
+     * dort schon Wasser (der haeufigste Fall in einem Ozean-Seed), werden die
+     * teureren zusaetzlichen Punkt-Abfragen gar nicht erst ausgefuehrt.
+     */
+    private OptionalInt evaluateGround(World world, int referenceX, int referenceZ, int[][] points) {
+        int referenceGround = world.getHighestBlockYAt(referenceX, referenceZ, HeightMap.OCEAN_FLOOR);
+        int referenceSurface = world.getHighestBlockYAt(referenceX, referenceZ, HeightMap.MOTION_BLOCKING_NO_LEAVES);
+        if (referenceSurface > referenceGround) {
+            return OptionalInt.empty();
+        }
+
         int minGround = referenceGround;
         int maxGround = referenceGround;
-        for (int[] point : corners) {
+        for (int[] point : points) {
             int ground = world.getHighestBlockYAt(point[0], point[1], HeightMap.OCEAN_FLOOR);
             int surfaceWithLiquids = world.getHighestBlockYAt(point[0], point[1], HeightMap.MOTION_BLOCKING_NO_LEAVES);
             if (surfaceWithLiquids > ground) {

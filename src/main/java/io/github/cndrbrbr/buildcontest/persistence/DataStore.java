@@ -20,6 +20,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.logging.Level;
+import java.util.stream.Collectors;
 
 /**
  * Speichert/laedt den kompletten Laufzeitzustand (Gruppenmitgliedschaft,
@@ -58,6 +59,8 @@ public final class DataStore {
         yaml.set("state.running", state.running());
         yaml.set("state.frozen", state.frozen());
         yaml.set("state.end-timestamp", state.endTimestampMillis());
+        yaml.set("state.teleported-players",
+                state.teleportedPlayers().stream().map(UUID::toString).toList());
 
         groupManager.exportMembership().forEach((groupId, members) ->
                 yaml.set("groups." + groupId, members.stream().map(UUID::toString).toList()));
@@ -94,10 +97,15 @@ public final class DataStore {
         }
         YamlConfiguration yaml = YamlConfiguration.loadConfiguration(file);
 
+        Set<UUID> teleportedPlayers = yaml.getStringList("state.teleported-players").stream()
+                .map(this::parseUuidOrNull)
+                .filter(uuid -> uuid != null)
+                .collect(Collectors.toCollection(LinkedHashSet::new));
         gameStateManager.importState(new GameStateManager.State(
                 yaml.getBoolean("state.running", false),
                 yaml.getBoolean("state.frozen", false),
-                yaml.getLong("state.end-timestamp", -1)));
+                yaml.getLong("state.end-timestamp", -1),
+                teleportedPlayers));
 
         groupManager.importMembership(readMembership(yaml));
         plotManager.importPlots(readPlots(yaml), groupManager);
@@ -169,6 +177,15 @@ public final class DataStore {
         } catch (RuntimeException exception) {
             plugin.getLogger().warning("Ungueltige Zeile in data.yml (scored-blocks) ignoriert: " + line);
             return Optional.empty();
+        }
+    }
+
+    private UUID parseUuidOrNull(String value) {
+        try {
+            return UUID.fromString(value);
+        } catch (IllegalArgumentException exception) {
+            plugin.getLogger().warning("Ungueltige Spieler-UUID in data.yml (state.teleported-players) ignoriert: " + value);
+            return null;
         }
     }
 

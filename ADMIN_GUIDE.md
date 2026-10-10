@@ -6,9 +6,10 @@ Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punkt
 
 > **Hinweis:** `rules.md` beschreibt das vereinbarte Zielregelwerk; diese Anleitung beschreibt den
 > aktuell implementierten Stand. Beide sind noch nicht vollständig deckungsgleich – offene Punkte
-> stehen in [`TODO.md`](./TODO.md). Insbesondere arbeitet das Plugin aktuell noch mit einer
-> eigenen, bei jedem `/bc start` neu erzeugten Bauplatz-Welt statt einer einzigen gemeinsamen
-> Survival-Welt, und kennt noch kein `/bc pause`/`/bc resume`.
+> stehen in [`TODO.md`](./TODO.md). Insbesondere kennt das Plugin noch kein `/bc pause`/`/bc resume`
+> (Blockplatzierung während einer evtl. zukünftigen Pause lässt sich also noch nicht einfrieren),
+> und das Block-Tracking/die Verbindungsprüfung pruefen noch nicht alle in rules.md §5
+> beschriebenen Sonderfaelle (Kolben, Hopper, Fremdplugins).
 
 ## Voraussetzungen
 
@@ -33,7 +34,7 @@ Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punkt
 | `groups.assignments` | Nur bei `CONFIG`: Minecraft-Name → Gruppennummer |
 | `plots.size-x` / `plots.size-z` | Grundfläche eines Bauplatzes |
 | `plots.min-distance` / `plots.max-distance` | Abstand zwischen Bauplätzen |
-| `plots.surface-y` | Nur Fallback, falls keine trockene Stelle gefunden wird (siehe unten) – normalerweise wird der Y-Level automatisch aus dem tatsächlichen Gelände ermittelt |
+| `plots.surface-y` | Nur Fallback, falls für einen Bauplatz keine trockene Stelle gefunden wird (siehe unten) – normalerweise wird der Y-Level **für jeden Bauplatz einzeln** automatisch aus dem tatsächlichen Gelände ermittelt, verschiedene Bauplätze können also unterschiedliche Höhen haben |
 | `plots.center-x` / `plots.center-z` | Mittelpunkt des Bauplatz-Rasters |
 | `plots.world` | **Siehe Warnung unten** |
 | `game.duration-minutes` | Automatisches Ende nach X Minuten, `0` = nur `/bc end` |
@@ -42,9 +43,11 @@ Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punkt
 
 ### ⚠️ `plots.world` darf NICHT die Server-Hauptwelt sein
 
-`/bc start` **löscht die komplette konfigurierte Bauplatz-Welt und erzeugt sie mit einem
-zufälligen Seed neu** – nur die Bauplätze selbst werden anschließend planiert, der Rest ist
-normales, frisch generiertes Terrain. Bukkit kann die Standard-Hauptwelt des Servers (aus
+`/bc start` erzeugt für einen **neuen** Contest die komplette konfigurierte Bauplatz-Welt mit
+einem zufälligen Seed neu – nur die Bauplätze selbst werden anschließend planiert, der Rest ist
+normales, frisch generiertes Terrain. Existiert bereits eine Bauplatz-Welt (von einem vorherigen
+Contest), fragt `/bc start` zur Sicherheit erst nach (siehe unten); läuft der Contest noch, wird
+`/bc start` ganz abgelehnt. Bukkit kann die Standard-Hauptwelt des Servers (aus
 `server.properties#level-name`, i. d. R. `world`) zur Laufzeit aber nicht entladen. `plots.world`
 muss deshalb eine **eigene, dedizierte Welt** sein (Standard: `buildcontest_world`), die nur für
 den Contest existiert. Lass Spieler auf der normalen Hauptwelt spawnen/warten, bis der Contest
@@ -90,12 +93,22 @@ rules.md#punktesystem). Eigene Werte setzen:
    ```
    /bc start
    ```
-   Erzeugt die frische Bauplatz-Welt (neuer Zufalls-Seed, automatisch auf trockenem Land - siehe
-   rules.md#setup-admin), verteilt die Bauplätze im Raster und planiert sie, und setzt alle Scores
-   aus einem eventuell vorherigen Contest zurück. Das kann je nach Bauplatzgröße/-anzahl einige
-   Sekunden dauern. Alle online Spieler werden automatisch in die Bauplatz-Welt teleportiert -
-   Mitglieder einer Gruppe direkt zu ihrem Bauplatz, alle anderen an den Welt-Spawn. Später
-   beitretende/zugewiesene Spieler nutzen `/bc tp`, um selbst nachzukommen.
+   Erzeugt die frische Bauplatz-Welt (neuer Zufalls-Seed), ermittelt für **jeden** Bauplatz
+   einzeln eine trockene, lokal passende Höhe (verschiedene Bauplätze können unterschiedliche
+   Y-Level haben), verteilt sie im Raster und planiert sie, und setzt alle Scores aus einem
+   eventuell vorherigen Contest zurück. Das kann je nach Bauplatzgröße/-anzahl einige Sekunden
+   dauern.
+
+   - Läuft bereits ein Contest, wird `/bc start` abgelehnt – erst `/bc end` ausführen.
+   - Existiert noch eine Bauplatz-Welt eines vorherigen (bereits beendeten) Contests, fragt
+     `/bc start` einmal nach: `/bc start confirm` erzeugt die neue Welt und löscht die alte damit
+     unwiderruflich (siehe rules.md#spielablauf--ende).
+
+   Jeder Spieler mit Gruppenzuordnung bekommt dabei **einmalig** eine sichere Startposition auf
+   seinem Bauplatz – online Spieler sofort bei `/bc start`, später beitretende/zugewiesene Spieler
+   bei `/bc join`/`/bc assign` bzw. beim ersten Einloggen. Danach bietet das Plugin bewusst
+   **keine** weiteren Teleport-Abkürzungen mehr an (kein `/bc tp` o. ä.) – normale Fortbewegung
+   (zu Fuß, Boot, Pferd, Minecart, Nether …) ist Teil des Spiels.
 4. **Laufenlassen**: Scoreboard, Schutzmechanismen und Punktewertung laufen automatisch (siehe
    rules.md#bauregeln, #schutzmechanismen, #scoreboard-anzeige).
 5. **Ende**:
@@ -148,14 +161,16 @@ Timer wird dabei korrekt mit der verbleibenden Restzeit fortgesetzt.
 | `/bc setdistance <min> <max>` | Mindest-/Maximalabstand zwischen Bauplätzen |
 | `/bc setscore <block> <punkte>` | Punktwert für einen Blocktyp (nur Laufzeit) |
 | `/bc assign <spieler> <gruppe>` | Spieler einer Gruppe zuweisen |
-| `/bc start` | Welt neu erzeugen, Bauplätze generieren, Scores zurücksetzen, Contest starten |
+| `/bc start` | Neuen Contest starten: Welt neu erzeugen, Bauplätze generieren, Scores zurücksetzen (abgelehnt, falls bereits ein Contest läuft) |
+| `/bc start confirm` | Wie `/bc start`, aber mit ausdrücklicher Bestätigung, falls noch eine alte Bauplatz-Welt existiert und ersetzt werden soll |
 | `/bc end` | Contest beenden, Endstand bekanntgeben |
 | `/bc deleteworld` | Bauplatz-Welt löschen (siehe `game.auto-delete-world-on-end`) |
 | `/bc automode 2x2` / `/bc automode 2x4` | Schnellstart-Automatikmodus aktivieren (siehe oben) |
 | `/bc reload` | `config.yml` und `scoreboard-config.yml` neu laden |
 
-Zusätzlich für Spieler nützlich: `/bc tp` teleportiert die eigene (online) Gruppe gemeinsam zu
-ihrem Bauplatz.
+Es gibt bewusst **keinen** Spieler-Teleportbefehl (kein `/bc tp` o. ä.) – siehe
+rules.md#welten-und-fortbewegung: Nach dem einmaligen Startpunkt-Teleport ist normale
+Fortbewegung Teil des Spiels.
 
 ## Troubleshooting
 
@@ -166,8 +181,12 @@ ihrem Bauplatz.
   dieser Block zählt dann einfach `default_score` (meist 0).
 - **Server knapp bei Arbeitsspeicher**: `plots.size-x`/`size-z` und `plots.min-distance` klein
   halten reduziert die beim Planieren/Welterzeugen zu ladende Chunk-Fläche spürbar.
-- **„Kein durchgehend trockener Platz … gefunden (Ozean-Welt?)“**: Die automatische Landsuche
-  (siehe rules.md#setup-admin) hat in der Umgebung des konfigurierten Mittelpunkts keine
-  durchgehend trockene Fläche gefunden und weicht auf `plots.center-x`/`-z` und `plots.surface-y`
-  aus der Config aus - die Bauplätze können dann im Wasser liegen. Einfach `/bc start` erneut
-  ausführen (neuer Zufalls-Seed) oder `plots.center-x`/`-z` auf eine andere Gegend setzen.
+- **„Kein durchgehend trockener Platz … gefunden (Ozean-Welt?)“**: Die automatische Landsuche hat
+  in der Umgebung des konfigurierten Mittelpunkts keine durchgehend trockene Fläche für das
+  Gesamt-Raster gefunden und weicht auf `plots.center-x`/`-z` und `plots.surface-y` aus der Config
+  aus. Einfach `/bc start confirm` erneut ausführen (neuer Zufalls-Seed) oder `plots.center-x`/`-z`
+  auf eine andere Gegend setzen.
+- **„Bauplatz von Gruppe N hat keinen durchgehend trockenen eigenen Boden“**: Nur dieser EINE
+  Bauplatz liegt trotz des insgesamt trockenen Gesamt-Rasters lokal im Wasser (z. B. ein kleiner
+  See); er bekommt dann den gemeinsamen Anker-Y-Level als Rückfalloption und kann im Wasser liegen.
+  `/bc start confirm` erneut ausführen behebt das meist (neuer Seed).

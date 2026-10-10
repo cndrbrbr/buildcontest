@@ -11,6 +11,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Set;
+import java.util.UUID;
+
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -81,7 +84,8 @@ class GameStateManagerTest {
     void importingAnAlreadyExpiredTimerEndsImmediately() {
         // Simuliert: Contest lief mit Timer, Server war waehrend des
         // eigentlichen Enddatums neu gestartet/offline.
-        GameStateManager.State expired = new GameStateManager.State(true, false, System.currentTimeMillis() - 1_000);
+        GameStateManager.State expired = new GameStateManager.State(
+                true, false, System.currentTimeMillis() - 1_000, Set.of());
 
         gameStateManager.importState(expired);
 
@@ -91,11 +95,36 @@ class GameStateManagerTest {
 
     @Test
     void importingARunningTimerReschedulesWithRemainingTime() {
-        GameStateManager.State stillRunning = new GameStateManager.State(true, false, System.currentTimeMillis() + 60_000);
+        GameStateManager.State stillRunning = new GameStateManager.State(
+                true, false, System.currentTimeMillis() + 60_000, Set.of());
 
         gameStateManager.importState(stillRunning);
 
         assertTrue(gameStateManager.isRunning());
         assertFalse(gameStateManager.isFrozen());
+    }
+
+    @Test
+    void initialTeleportIsOnlyGrantedOnce() {
+        when(mainConfig.getDurationMinutes()).thenReturn(0);
+        gameStateManager.start();
+        UUID player = UUID.randomUUID();
+
+        assertTrue(gameStateManager.markInitialTeleportDone(player));
+        assertTrue(gameStateManager.hasReceivedInitialTeleport(player));
+        assertFalse(gameStateManager.markInitialTeleportDone(player));
+    }
+
+    @Test
+    void startingANewContestResetsTeleportTracking() {
+        when(mainConfig.getDurationMinutes()).thenReturn(0);
+        gameStateManager.start();
+        UUID player = UUID.randomUUID();
+        gameStateManager.markInitialTeleportDone(player);
+
+        gameStateManager.end();
+        gameStateManager.start();
+
+        assertFalse(gameStateManager.hasReceivedInitialTeleport(player));
     }
 }

@@ -4,6 +4,7 @@ import io.github.cndrbrbr.buildcontest.BuildContestPlugin;
 import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import io.github.cndrbrbr.buildcontest.config.ScoreConfig;
 import io.github.cndrbrbr.buildcontest.manager.AutomodeManager;
+import io.github.cndrbrbr.buildcontest.manager.EntryTeleportManager;
 import io.github.cndrbrbr.buildcontest.manager.GameStateManager;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
@@ -11,7 +12,6 @@ import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
 import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.model.Group;
-import io.github.cndrbrbr.buildcontest.model.Plot;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -27,13 +27,12 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.UUID;
 
 /** Implementiert die in rules.md#admin-befehle-übersicht beschriebenen Unterbefehle von /bc. */
 public final class BuildContestCommand implements CommandExecutor, TabCompleter {
 
     private static final List<String> SUBCOMMANDS = List.of(
-            "join", "tp", "setgroups", "setgroupsize", "setplotsize",
+            "join", "setgroups", "setgroupsize", "setplotsize",
             "setdistance", "setscore", "assign", "start", "end", "deleteworld", "automode", "reload");
 
     private final BuildContestPlugin plugin;
@@ -46,12 +45,13 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private final ScoreManager scoreManager;
     private final WorldManager worldManager;
     private final AutomodeManager automodeManager;
+    private final EntryTeleportManager entryTeleportManager;
 
     public BuildContestCommand(BuildContestPlugin plugin, MainConfig mainConfig, ScoreConfig scoreConfig,
                                 GroupManager groupManager, PlotManager plotManager,
                                 GameStateManager gameStateManager, ScoreboardManager scoreboardManager,
                                 ScoreManager scoreManager, WorldManager worldManager,
-                                AutomodeManager automodeManager) {
+                                AutomodeManager automodeManager, EntryTeleportManager entryTeleportManager) {
         this.plugin = plugin;
         this.mainConfig = mainConfig;
         this.scoreConfig = scoreConfig;
@@ -62,6 +62,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         this.scoreManager = scoreManager;
         this.worldManager = worldManager;
         this.automodeManager = automodeManager;
+        this.entryTeleportManager = entryTeleportManager;
     }
 
     @Override
@@ -74,14 +75,14 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         String sub = args[0].toLowerCase(Locale.ROOT);
         return switch (sub) {
             case "join" -> handleJoin(sender, args);
-            case "tp" -> handleTeleport(sender);
             case "setgroups" -> requireAdmin(sender) && handleSetGroups(sender, args);
             case "setgroupsize" -> requireAdmin(sender) && handleSetGroupSize(sender, args);
             case "setplotsize" -> requireAdmin(sender) && handleSetPlotSize(sender, args);
             case "setdistance" -> requireAdmin(sender) && handleSetDistance(sender, args);
             case "setscore" -> requireAdmin(sender) && handleSetScore(sender, args);
             case "assign" -> requireAdmin(sender) && handleAssign(sender, args);
-            case "start" -> requireAdmin(sender) && handleStart(sender);
+            case "start" -> requireAdmin(sender)
+                    && handleStart(sender, args.length > 1 && "confirm".equalsIgnoreCase(args[1]));
             case "end" -> requireAdmin(sender) && handleEnd(sender);
             case "deleteworld" -> requireAdmin(sender) && handleDeleteWorld(sender);
             case "automode" -> requireAdmin(sender) && handleAutomode(sender, args);
@@ -120,6 +121,10 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case SUCCESS -> {
                 sender.sendMessage("§aDu bist Gruppe " + groupId + " beigetreten.");
                 scoreboardManager.refreshAll();
+                // Laeuft der Contest bereits (spaeter Beitritt), bekommt der
+                // Spieler jetzt seinen einmaligen Startpunkt-Teleport (siehe
+                // EntryTeleportManager).
+                entryTeleportManager.teleportIfFirstEntry(player);
             }
             case ALREADY_IN_GROUP -> sender.sendMessage("§cDu bist bereits einer Gruppe zugeordnet.");
             case GROUP_FULL -> sender.sendMessage("§cDiese Gruppe ist bereits voll.");
@@ -128,80 +133,6 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
                     sender.sendMessage("§cDie freie Gruppenwahl ist deaktiviert (Configfile-Zuweisung aktiv).");
         }
         return true;
-    }
-
-    /**
-     * Teleportiert alle online Mitglieder der eigenen Gruppe gemeinsam zur
-     * Mitte ihres Bauplatzes (siehe rules.md#bauplaetze). Erfordert, dass der
-     * Contest bereits gestartet wurde (sonst existiert noch kein Bauplatz).
-     */
-    private boolean handleTeleport(CommandSender sender) {
-        if (!(sender instanceof Player player)) {
-            sender.sendMessage("§cNur Spieler können sich zu ihrem Bauplatz teleportieren lassen.");
-            return true;
-        }
-        Optional<Group> groupOpt = groupManager.getGroupOf(player.getUniqueId());
-        if (groupOpt.isEmpty()) {
-            sender.sendMessage("§cDu bist noch keiner Gruppe zugeordnet.");
-            return true;
-        }
-        Group group = groupOpt.get();
-
-        Optional<Plot> plotOpt = plotManager.getPlot(group.getId());
-        if (plotOpt.isEmpty()) {
-            sender.sendMessage("§cFür eure Gruppe gibt es noch keinen Bauplatz - wurde der Contest schon mit /bc start begonnen?");
-            return true;
-        }
-        Optional<Location> destinationOpt = plotCenterLocation(plotOpt.get());
-        if (destinationOpt.isEmpty()) {
-            sender.sendMessage("§cDie Bauplatz-Welt ist aktuell nicht geladen.");
-            return true;
-        }
-        Location destination = destinationOpt.get();
-
-        int teleported = 0;
-        for (UUID memberId : group.getMembers()) {
-            Player member = plugin.getServer().getPlayer(memberId);
-            if (member == null) {
-                continue;
-            }
-            member.teleport(destination);
-            member.sendMessage("§aDu wurdest zu eurem Bauplatz teleportiert.");
-            teleported++;
-        }
-        sender.sendMessage("§a" + teleported + " online Mitglied(er) eurer Gruppe wurden zum Bauplatz teleportiert.");
-        return true;
-    }
-
-    private Optional<Location> plotCenterLocation(Plot plot) {
-        World world = plugin.getServer().getWorld(plot.getWorldName());
-        if (world == null) {
-            return Optional.empty();
-        }
-        double centerX = (plot.getMinX() + plot.getMaxX()) / 2.0 + 0.5;
-        double centerZ = (plot.getMinZ() + plot.getMaxZ()) / 2.0 + 0.5;
-        return Optional.of(new Location(world, centerX, plot.getSurfaceY() + 1, centerZ));
-    }
-
-    /**
-     * Teleportiert bei Contest-Start alle online Spieler in die Bauplatz-Welt
-     * (siehe rules.md#spielablauf--ende): Mitglieder einer Gruppe direkt zu
-     * ihrem Bauplatz, alle anderen (noch keiner Gruppe zugeordnet) an den
-     * Welt-Spawnpunkt.
-     */
-    private void teleportAllToBuildWorld() {
-        World buildWorld = plugin.getServer().getWorld(mainConfig.getWorldName());
-        if (buildWorld == null) {
-            return;
-        }
-        Location fallback = buildWorld.getSpawnLocation();
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            Location destination = groupManager.getGroupOf(player.getUniqueId())
-                    .flatMap(group -> plotManager.getPlot(group.getId()))
-                    .flatMap(this::plotCenterLocation)
-                    .orElse(fallback);
-            player.teleport(destination);
-        }
     }
 
     /**
@@ -333,6 +264,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case SUCCESS -> {
                 sender.sendMessage("§a" + target.getName() + " wurde Gruppe " + groupId + " zugewiesen.");
                 scoreboardManager.refreshAll();
+                entryTeleportManager.teleportIfFirstEntry(target);
             }
             case GROUP_FULL -> sender.sendMessage("§cDiese Gruppe ist bereits voll.");
             case NO_SUCH_GROUP -> sender.sendMessage("§cDiese Gruppe existiert nicht.");
@@ -341,8 +273,30 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         return true;
     }
 
-    /** Oeffentlich, damit AutomodeManager denselben Start-Ablauf ausloesen kann, sobald beide Teams voll sind. */
-    public boolean handleStart(CommandSender sender) {
+    /**
+     * Oeffentlich, damit AutomodeManager denselben Start-Ablauf ausloesen
+     * kann, sobald beide Teams voll sind (dort immer mit confirmed=true, da
+     * die automatische Aktivierung bewusst einen neuen Contest will).
+     *
+     * @param confirmed ob der Admin das unwiderrufliche Ersetzen einer
+     *                  evtl. noch vorhandenen alten Bauplatz-Welt bereits
+     *                  bestaetigt hat (siehe rules.md#spielablauf--ende:
+     *                  "Vor dem Ersetzen der bisherigen Welt muss der Admin
+     *                  ausdruecklich bestaetigen...").
+     */
+    public boolean handleStart(CommandSender sender, boolean confirmed) {
+        if (gameStateManager.isRunning()) {
+            sender.sendMessage("§cEin Contest läuft bereits. Erst /bc end ausführen, bevor ein neuer gestartet wird.");
+            return true;
+        }
+        if (worldManager.worldExists() && !confirmed) {
+            sender.sendMessage("§eEs existiert noch eine Bauplatz-Welt eines vorherigen Contests (evtl. noch "
+                    + "sichtbare alte Bauten). /bc start erzeugt eine KOMPLETT NEUE Welt mit zufälligem Seed - die "
+                    + "bisherige geht dabei unwiderruflich verloren.");
+            sender.sendMessage("§eZum Bestätigen: §c/bc start confirm");
+            return true;
+        }
+
         sender.sendMessage("§eErzeuge frische Bauplatz-Welt mit zufälligem Seed, das kann einen Moment dauern...");
         if (worldManager.regenerate().isEmpty()) {
             sender.sendMessage("§cAbgebrochen: plots.world ist in config.yml auf die Server-Hauptwelt gesetzt. "
@@ -354,7 +308,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         plotManager.generatePlots(groupManager.getGroups().values());
         gameStateManager.start();
         scoreboardManager.refreshAll();
-        teleportAllToBuildWorld();
+        entryTeleportManager.teleportAllNewEntrants();
         sender.sendMessage("§aBuildcontest gestartet. Neue Welt erzeugt, Bauplätze generiert und planiert.");
         return true;
     }

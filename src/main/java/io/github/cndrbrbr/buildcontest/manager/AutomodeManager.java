@@ -217,7 +217,10 @@ public final class AutomodeManager implements Listener {
             removeBalls(online);
         }
         removeBoard();
-        command.handleStart(Bukkit.getConsoleSender());
+        // Automatikmodus will immer einen NEUEN Contest - die Bestaetigung
+        // zum Ersetzen einer evtl. noch vorhandenen alten Welt (siehe
+        // BuildContestCommand#handleStart) gilt hier implizit als erteilt.
+        command.handleStart(Bukkit.getConsoleSender(), true);
     }
 
     private void spawnBoard(Location location) {

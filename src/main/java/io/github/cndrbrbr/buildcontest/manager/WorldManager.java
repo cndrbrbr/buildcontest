@@ -99,6 +99,16 @@ public final class WorldManager {
     }
 
     /**
+     * Ob aktuell schon eine Bauplatz-Welt existiert (z. B. von einem
+     * vorherigen Contest, siehe rules.md#spielablauf--ende) - genutzt von
+     * BuildContestCommand#handleStart, um vor dem unwiderruflichen Ersetzen
+     * eine ausdrueckliche Admin-Bestaetigung einzufordern.
+     */
+    public boolean worldExists() {
+        return Bukkit.getWorld(mainConfig.getWorldName()) != null;
+    }
+
+    /**
      * Loescht eine evtl. vorhandene alte Bauplatz-Welt vollstaendig und
      * erzeugt sie mit einem zufaelligen Seed neu.
      *

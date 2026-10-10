@@ -7,6 +7,7 @@ import io.github.cndrbrbr.buildcontest.listener.BlockListener;
 import io.github.cndrbrbr.buildcontest.listener.PlayerConnectionListener;
 import io.github.cndrbrbr.buildcontest.listener.ProtectionListener;
 import io.github.cndrbrbr.buildcontest.manager.AutomodeManager;
+import io.github.cndrbrbr.buildcontest.manager.EntryTeleportManager;
 import io.github.cndrbrbr.buildcontest.manager.GameStateManager;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
@@ -29,6 +30,7 @@ public final class BuildContestPlugin extends JavaPlugin {
     private GameStateManager gameStateManager;
     private WorldManager worldManager;
     private AutomodeManager automodeManager;
+    private EntryTeleportManager entryTeleportManager;
     private DataStore dataStore;
     private BukkitTask autosaveTask;
 
@@ -49,6 +51,7 @@ public final class BuildContestPlugin extends JavaPlugin {
         worldManager.ensureLoaded();
         dataStore = new DataStore(this, groupManager, plotManager, scoreManager, gameStateManager);
         automodeManager = new AutomodeManager(this, mainConfig, groupManager);
+        entryTeleportManager = new EntryTeleportManager(gameStateManager, groupManager, plotManager);
 
         if (dataStore.load()) {
             getLogger().info("Gespeicherter Spielstand aus data.yml geladen.");
@@ -60,12 +63,13 @@ public final class BuildContestPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new ProtectionListener(plotManager, groupManager), this);
         getServer().getPluginManager().registerEvents(
-                new PlayerConnectionListener(mainConfig, groupManager, scoreboardManager), this);
+                new PlayerConnectionListener(mainConfig, groupManager, scoreboardManager, entryTeleportManager), this);
         getServer().getPluginManager().registerEvents(automodeManager, this);
 
         BuildContestCommand command = new BuildContestCommand(
                 this, mainConfig, scoreConfig, groupManager, plotManager,
-                gameStateManager, scoreboardManager, scoreManager, worldManager, automodeManager);
+                gameStateManager, scoreboardManager, scoreManager, worldManager, automodeManager,
+                entryTeleportManager);
         automodeManager.setCommand(command);
         getCommand("bc").setExecutor(command);
         getCommand("bc").setTabCompleter(command);
