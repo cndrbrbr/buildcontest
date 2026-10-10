@@ -42,8 +42,10 @@ import java.util.OptionalInt;
  */
 public final class PlotManager {
 
-    private static final int LAND_SEARCH_RING_STEP = 64;
-    private static final int LAND_SEARCH_MAX_RINGS = 15;
+    private static final int LAND_SEARCH_RING_STEP = 96;
+    private static final int LAND_SEARCH_MAX_RINGS = 10;
+    /** Maximale Ausschachtungstiefe unter dem natuerlichen Boden am Mittelpunkt, siehe {@link #checkAllLand}. */
+    private static final int MAX_EXCAVATION_DEPTH = 5;
     private static final int[][] LAND_SEARCH_DIRECTIONS = {
             {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
     };
@@ -173,12 +175,7 @@ public final class PlotManager {
      * Mittelpunkt, an dem die vier Eckpunkte und die Mitte des gesamten
      * Bauplatz-Rasters durchgehend auf trockenem Land liegen (siehe
      * Klassen-Javadoc). Liefert den Mittelpunkt sowie den dafuer passenden,
-     * gemeinsamen Y-Level - bewusst der TIEFSTE Bodenpunkt der Stichproben,
-     * nicht der hoechste: so wird beim Planieren immer nur ausgeschachtet
-     * (natuerliches Terrain oberhalb des Levels abgetragen), nie mit
-     * Fuellmaterial aufgeschuettet. Ein aufgeschuetteter Bauplatz koennte an
-     * tieferen Stellen auf einem Hohlraum "schweben", von dem Spieler nicht
-     * mehr auf natuerlichem Weg hochkommen.
+     * gemeinsamen Y-Level (siehe {@link #checkAllLand}).
      */
     private Optional<LandAnchor> findLandAnchor(World world, int startX, int startZ, int halfWidth, int halfDepth) {
         OptionalInt startGround = checkAllLand(world, startX, startZ, halfWidth, halfDepth);
@@ -204,21 +201,37 @@ public final class PlotManager {
      * Prueft Mittelpunkt und vier Eckpunkte des Bauplatz-Rasters an dieser
      * Kandidaten-Position: liegt an JEDEM Punkt Wasser (Hoehe inkl.
      * Fluessigkeiten > tatsaechlicher Boden), gilt die Position als
-     * ungeeignet. Sonst wird der TIEFSTE Bodenpunkt der Stichproben
-     * zurueckgegeben (siehe {@link #findLandAnchor}, Bauplatz-Oberflaeche
-     * liegt direkt darueber - nie darunter aufgefuellt).
+     * ungeeignet. Referenz-"Erdlevel" ist der Bodenpunkt genau am
+     * Mittelpunkt; der gemeinsame surfaceY liegt davon ausgehend maximal
+     * {@link #MAX_EXCAVATION_DEPTH} Bloecke tiefer (nie tiefer, auch wenn ein
+     * Eckpunkt - z. B. eine Schlucht - natuerlich noch tiefer liegt). Dadurch
+     * wird nicht der komplette Bauplatz auf das Niveau eines einzelnen
+     * tiefen Ausreissers abgesenkt; stattdessen fuellt {@link #flatten} dort
+     * bis zum gemeinsamen Niveau auf (siehe rules.md#bauplaetze: Bauplaetze
+     * liegen immer nahe am natuerlichen Boden, nicht tief in der Erde).
+     *
+     * Performance: {@code getHighestBlockYAt} erzwingt synchrones Laden/
+     * Generieren des jeweiligen Chunks auf dem Hauptthread - bei vielen
+     * Fehlversuchen (z. B. grosser Ozean) kann das den Server fuer Sekunden
+     * einfrieren. Deshalb wird zuerst NUR der Mittelpunkt geprueft; liegt
+     * dort schon Wasser (der haeufigste Fall in einem Ozean-Seed), werden
+     * die vier teureren Eckpunkt-Abfragen gar nicht erst ausgefuehrt.
      */
     private OptionalInt checkAllLand(World world, int centerX, int centerZ, int halfWidth, int halfDepth) {
-        int[][] samplePoints = {
-                {centerX, centerZ},
+        int centerGround = world.getHighestBlockYAt(centerX, centerZ, HeightMap.OCEAN_FLOOR);
+        int centerSurface = world.getHighestBlockYAt(centerX, centerZ, HeightMap.MOTION_BLOCKING_NO_LEAVES);
+        if (centerSurface > centerGround) {
+            return OptionalInt.empty();
+        }
+
+        int[][] corners = {
                 {centerX - halfWidth, centerZ - halfDepth},
                 {centerX + halfWidth, centerZ - halfDepth},
                 {centerX - halfWidth, centerZ + halfDepth},
                 {centerX + halfWidth, centerZ + halfDepth},
         };
-
-        int minGround = Integer.MAX_VALUE;
-        for (int[] point : samplePoints) {
+        int minGround = centerGround;
+        for (int[] point : corners) {
             int ground = world.getHighestBlockYAt(point[0], point[1], HeightMap.OCEAN_FLOOR);
             int surfaceWithLiquids = world.getHighestBlockYAt(point[0], point[1], HeightMap.MOTION_BLOCKING_NO_LEAVES);
             if (surfaceWithLiquids > ground) {
@@ -226,20 +239,21 @@ public final class PlotManager {
             }
             minGround = Math.min(minGround, ground);
         }
-        return OptionalInt.of(minGround);
+        return OptionalInt.of(Math.max(minGround, centerGround - MAX_EXCAVATION_DEPTH));
     }
 
     /**
      * Planiert einen Bauplatz auf den gemeinsamen surfaceY (siehe
-     * {@link #findLandAnchor}: der tiefste Bodenpunkt der Stichproben, damit
-     * hier immer nur ausgeschachtet statt aufgefuellt wird). Alles oberhalb
-     * wird abgetragen, darunter liegt garantiert bereits natuerlicher,
-     * solider Boden.
+     * {@link #checkAllLand}). Alles oberhalb wird abgetragen (ausschachten);
+     * liegt der natuerliche Boden einer Spalte tiefer als die auf
+     * {@link #MAX_EXCAVATION_DEPTH} Bloecke begrenzte Standardtiefe, wird bis
+     * zu diesem natuerlichen Boden aufgefuellt statt eine schwebende
+     * Plattform mit Hohlraum darunter zu hinterlassen.
      */
     private void flatten(Plot plot, World world) {
         int surfaceY = plot.getSurfaceY();
         int clearUpTo = Math.min(world.getMaxHeight() - 1, surfaceY + 150);
-        int fillDownTo = Math.max(world.getMinHeight(), surfaceY - 4);
+        int minFillDownTo = Math.max(world.getMinHeight(), surfaceY - 4);
 
         for (int x = plot.getMinX(); x <= plot.getMaxX(); x++) {
             for (int z = plot.getMinZ(); z <= plot.getMaxZ(); z++) {
@@ -249,6 +263,9 @@ public final class PlotManager {
                         block.setType(Material.AIR, false);
                     }
                 }
+
+                int naturalGround = world.getHighestBlockYAt(x, z, HeightMap.OCEAN_FLOOR);
+                int fillDownTo = Math.max(world.getMinHeight(), Math.min(minFillDownTo, naturalGround));
                 for (int y = surfaceY; y > fillDownTo; y--) {
                     Block block = world.getBlockAt(x, y, z);
                     block.setType(y == surfaceY ? Material.GRASS_BLOCK : Material.DIRT, false);
