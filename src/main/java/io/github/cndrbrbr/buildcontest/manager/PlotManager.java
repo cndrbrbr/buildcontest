@@ -62,6 +62,8 @@ public final class PlotManager {
     /** Wie viele Bloecke oberhalb der Markierung freigeraeumt werden, damit der Beacon-Strahl sichtbar ist. */
     private static final int BEACON_CLEAR_HEIGHT = 6;
     private static final Material BEACON_BASE_MATERIAL = Material.IRON_BLOCK;
+    /** Deckschicht eines Bauplatzes, siehe {@link #flatten} - gut sichtbar/abgegrenzt vom natuerlichen Gelaende. */
+    private static final Material PLOT_SURFACE_MATERIAL = Material.ORANGE_WOOL;
     private static final int[][] LAND_SEARCH_DIRECTIONS = {
             {1, 0}, {-1, 0}, {0, 1}, {0, -1}, {1, 1}, {1, -1}, {-1, 1}, {-1, -1}
     };
@@ -366,7 +368,7 @@ public final class PlotManager {
                 }
                 for (int y = surfaceY; y > fillDownTo; y--) {
                     Block block = world.getBlockAt(x, y, z);
-                    block.setType(y == surfaceY ? Material.GRASS_BLOCK : Material.DIRT, false);
+                    block.setType(y == surfaceY ? PLOT_SURFACE_MATERIAL : Material.DIRT, false);
                 }
             }
         }
