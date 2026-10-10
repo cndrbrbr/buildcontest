@@ -23,6 +23,8 @@ import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.persistence.PersistentDataType;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,23 +45,32 @@ import java.util.UUID;
 public final class AutomodeManager implements Listener {
 
     public enum Preset {
-        TWO_BY_TWO(2, 2, 10),
-        TWO_BY_FOUR(2, 4, 20);
+        TWO_BY_TWO(2, 2, 10, false),
+        TWO_BY_FOUR(2, 4, 20, false),
+        /** Free-for-all: groupCount wird erst bei activate() aus der Anzahl online Spieler bestimmt. */
+        ONE_BY_ONE(0, 1, 10, true);
 
         private final int groupCount;
         private final int groupSize;
         private final int plotSize;
+        private final boolean freeForAll;
 
-        Preset(int groupCount, int groupSize, int plotSize) {
+        Preset(int groupCount, int groupSize, int plotSize, boolean freeForAll) {
             this.groupCount = groupCount;
             this.groupSize = groupSize;
             this.plotSize = plotSize;
+            this.freeForAll = freeForAll;
+        }
+
+        public boolean isFreeForAll() {
+            return freeForAll;
         }
 
         public static Optional<Preset> parse(String arg) {
             return switch (arg.toLowerCase(Locale.ROOT)) {
                 case "2x2" -> Optional.of(TWO_BY_TWO);
                 case "2x4" -> Optional.of(TWO_BY_FOUR);
+                case "1x1" -> Optional.of(ONE_BY_ONE);
                 default -> Optional.empty();
             };
         }
@@ -93,6 +104,11 @@ public final class AutomodeManager implements Listener {
      * allen online Spielern ohne Gruppe die beiden Waehl-Baelle.
      */
     public void activate(Preset preset, CommandSender sender) {
+        if (preset.isFreeForAll()) {
+            activateFreeForAll(preset, sender);
+            return;
+        }
+
         waiting = true;
 
         plugin.getConfig().set("groups.count", preset.groupCount);
@@ -127,6 +143,44 @@ public final class AutomodeManager implements Listener {
         sender.sendMessage("§aAutomatikmodus aktiviert: 2 Teams (Rot/Blau), " + preset.groupSize
                 + " Spieler je Team, Bauplatzgröße " + preset.plotSize + "x" + preset.plotSize
                 + ". Spieler wählen per Ball ihr Team.");
+    }
+
+    /**
+     * Free-for-all-Schnellstart (1x1): jeder aktuell online Spieler bekommt
+     * sofort seine eigene 1-Spieler-Gruppe mit eigenem Bauplatz, benannt nach
+     * seinem Spielernamen; der Contest startet ohne Ball-Wahl/Wartephase
+     * direkt. Anders als bei Rot/Blau gibt es hier keine feste Teamanzahl -
+     * sie ergibt sich aus der Anzahl online Spieler zum Zeitpunkt der
+     * Aktivierung. Spaeter beitretende Spieler bekommen keine eigene Gruppe
+     * mehr automatisch (alle Gruppen haben bereits maxSize 1 erreicht) - der
+     * Admin muesste dafuer manuell /bc setgroups erhoehen und zuweisen.
+     */
+    private void activateFreeForAll(Preset preset, CommandSender sender) {
+        List<Player> online = new ArrayList<>(Bukkit.getOnlinePlayers());
+        if (online.isEmpty()) {
+            sender.sendMessage("§cEs ist aktuell kein Spieler online - 1x1 braucht mindestens einen Spieler.");
+            return;
+        }
+
+        plugin.getConfig().set("groups.count", online.size());
+        plugin.getConfig().set("groups.max-size", preset.groupSize);
+        plugin.getConfig().set("groups.assignment-mode", "FREE");
+        plugin.getConfig().set("plots.size-x", preset.plotSize);
+        plugin.getConfig().set("plots.size-z", preset.plotSize);
+        plugin.saveConfig();
+        mainConfig.reload();
+        groupManager.rebuildGroups();
+
+        for (int i = 0; i < online.size(); i++) {
+            Player player = online.get(i);
+            int groupId = i + 1;
+            groupManager.assign(player.getUniqueId(), groupId);
+            groupManager.getGroup(groupId).ifPresent(group -> group.setName(player.getName()));
+        }
+
+        sender.sendMessage("§aFree-for-all 1x1 aktiviert: " + online.size() + " Spieler, je eigener "
+                + preset.plotSize + "x" + preset.plotSize + "-Bauplatz. Contest startet sofort.");
+        command.handleStart(Bukkit.getConsoleSender(), true);
     }
 
     @EventHandler

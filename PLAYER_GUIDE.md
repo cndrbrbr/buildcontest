@@ -29,6 +29,9 @@ jeweiligen Team beizutreten (nur möglich, solange das Team noch nicht voll ist)
 Tafel in der Eingangswelt zeigt live, wer schon in welchem Team ist. Sobald beide Teams voll sind,
 startet der Contest automatisch.
 
+**Im Free-for-all-Automatikmodus** (`/bc automode 1x1`) bekommt jeder online Spieler sofort seine
+eigene Gruppe mit eigenem Bauplatz – ihr müsst nichts wählen, der Contest startet direkt.
+
 ## Bauen
 
 - Euer Bauplatz ist eine rechteckige, flach planierte Fläche auf eurer eigenen, lokal passenden

@@ -124,10 +124,10 @@ rules.md#punktesystem). Eigene Werte setzen:
    automatisch direkt nach `/bc end` passiert. Spätestens der nächste `/bc start` ersetzt die Welt
    ohnehin komplett.
 
-## Automatikmodus (Rot gegen Blau)
+## Automatikmodus (Rot gegen Blau, Free-for-all)
 
-Zusatzfunktion des Plugins, (noch) nicht Teil des verhandelten `rules.md`: Ein schnelles,
-selbsterklärendes Event ohne manuelle Vorbereitung.
+Zusatzfunktion des Plugins, (noch) nicht Teil des verhandelten `rules.md`: Schnelle,
+selbsterklärende Events ohne manuelle Vorbereitung.
 
 ```
 /bc automode 2x2
@@ -142,6 +142,17 @@ benennt die Gruppen **Rot** und **Blau** und aktiviert die Ball-basierte Team-Wa
 bekommen in der Eingangswelt einen roten und einen blauen Wolle-"Ball" ins Inventar und wählen per
 Rechtsklick ihr Team. Eine schwebende Tafel in der Eingangswelt zeigt live, wer in welcher Gruppe
 ist. Sobald beide Gruppen voll sind, startet der Contest automatisch – kein `/bc start` nötig.
+
+```
+/bc automode 1x1
+```
+
+Free-for-all-Variante: Jeder aktuell **online** Spieler bekommt sofort seine eigene 1-Spieler-
+Gruppe (benannt nach seinem Minecraft-Namen) mit eigenem 10×10-Bauplatz. Es gibt weder Ball-Wahl
+noch Wartephase – der Contest startet unmittelbar mit `/bc automode 1x1`. Ist aktuell niemand
+online, bricht der Befehl mit einer Fehlermeldung ab. Spieler, die **nach** der Aktivierung
+beitreten, bekommen keine eigene Gruppe mehr automatisch (alle Gruppen haben bereits ihre maximale
+Größe 1 erreicht) – dafür muss der Admin anschließend manuell `/bc setgroups` erhöhen und zuweisen.
 
 ## Persistenz
 

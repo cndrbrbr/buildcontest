@@ -343,12 +343,12 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
 
     private boolean handleAutomode(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§eBenutzung: /bc automode <2x2|2x4>");
+            sender.sendMessage("§eBenutzung: /bc automode <1x1|2x2|2x4>");
             return true;
         }
         Optional<AutomodeManager.Preset> preset = AutomodeManager.Preset.parse(args[1]);
         if (preset.isEmpty()) {
-            sender.sendMessage("§cUnbekannter Modus: " + args[1] + " (erlaubt: 2x2, 2x4)");
+            sender.sendMessage("§cUnbekannter Modus: " + args[1] + " (erlaubt: 1x1, 2x2, 2x4)");
             return true;
         }
         automodeManager.activate(preset.get(), sender);
