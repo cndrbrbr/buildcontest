@@ -47,6 +47,16 @@ beginnt.
 Ist `plots.world` trotzdem auf die Hauptwelt gesetzt, bricht `/bc start` kontrolliert mit einer
 Fehlermeldung ab, statt den Server zu beschädigen.
 
+### Die Eingangswelt (Server-Hauptwelt)
+
+Anders als die Bauplatz-Welt wird die Hauptwelt (`world` in `server.properties`) vom Plugin
+**nie neu erzeugt oder gelöscht** – der Admin gestaltet sie selbst und sie bleibt dauerhaft
+erhalten. Empfohlen: `level-type=minecraft:flat` in `server.properties`, damit sie bei jedem
+Serverstart deterministisch gleich bleibt (z. B. als Lobby/Wartebereich, in dem sich Spieler vor
+Contest-Start treffen). Beim Aktivieren korrigiert das Plugin automatisch die Y-Koordinate des
+Weltspawns auf festen Boden (X/Z bleiben wie vom Admin gesetzt) – ein Absturz durch einen
+"schwebenden" Weltspawn ist damit ausgeschlossen.
+
 ## Punktetabelle (`scoreboard-config.yml`)
 
 Jeder Blocktyp hat einen Punktwert nach einem siebenstufigen Tier-System (siehe

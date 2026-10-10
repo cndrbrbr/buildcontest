@@ -43,6 +43,7 @@ public final class BuildContestPlugin extends JavaPlugin {
         scoreboardManager = new ScoreboardManager(groupManager, scoreManager);
         gameStateManager = new GameStateManager(this, mainConfig);
         worldManager = new WorldManager(this, mainConfig);
+        worldManager.ensurePrimaryWorldSpawnOnGround();
         worldManager.ensureLoaded();
         dataStore = new DataStore(this, groupManager, plotManager, scoreManager, gameStateManager);
 

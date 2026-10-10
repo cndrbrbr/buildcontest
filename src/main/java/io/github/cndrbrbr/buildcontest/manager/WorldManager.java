@@ -3,6 +3,7 @@ package io.github.cndrbrbr.buildcontest.manager;
 import io.github.cndrbrbr.buildcontest.BuildContestPlugin;
 import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import org.bukkit.Bukkit;
+import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
@@ -52,6 +53,25 @@ public final class WorldManager {
     public WorldManager(BuildContestPlugin plugin, MainConfig mainConfig) {
         this.plugin = plugin;
         this.mainConfig = mainConfig;
+    }
+
+    /**
+     * Korrigiert bei jedem Serverstart die Y-Koordinate des Weltspawns der
+     * Server-Hauptwelt ("Eingangswelt"), damit Spieler dort garantiert auf
+     * festem Boden spawnen/respawnen statt in der Luft oder im Boden zu
+     * stecken. X/Z bleiben unveraendert (der Admin gestaltet und behaelt die
+     * Eingangswelt selbst, siehe rules.md#setup-admin - anders als die
+     * Bauplatz-Welt wird sie vom Plugin nie neu erzeugt oder geloescht).
+     */
+    public void ensurePrimaryWorldSpawnOnGround() {
+        if (Bukkit.getWorlds().isEmpty()) {
+            return;
+        }
+        World primary = Bukkit.getWorlds().get(0);
+        Location spawn = primary.getSpawnLocation();
+        int topSolidBlockY = primary.getHighestBlockYAt(spawn.getBlockX(), spawn.getBlockZ(),
+                HeightMap.MOTION_BLOCKING_NO_LEAVES);
+        primary.setSpawnLocation(spawn.getBlockX(), topSolidBlockY + 1, spawn.getBlockZ());
     }
 
     /**
