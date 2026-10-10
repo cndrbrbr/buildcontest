@@ -21,6 +21,12 @@ Je nach Server-Einstellung gibt es zwei Modi (euer Admin sagt euch, welcher akti
 Sobald der Contest läuft, bringt euch `/bc tp` als Gruppe gemeinsam zu eurem Bauplatz (alle online
 Mitglieder werden teleportiert).
 
+**Im Automatikmodus** (Rot gegen Blau) läuft das anders: Ihr bekommt in der Eingangswelt einen
+roten und einen blauen Wolle-"Ball" ins Inventar. Benutzt den Ball eurer Wahl (Rechtsklick), um dem
+jeweiligen Team beizutreten (nur möglich, solange das Team noch nicht voll ist). Eine schwebende
+Tafel in der Eingangswelt zeigt live, wer schon in welchem Team ist. Sobald beide Teams voll sind,
+startet der Contest automatisch.
+
 ## Bauen
 
 - Euer Bauplatz ist eine rechteckige, flach planierte Fläche. Nach oben (Y) gibt es **kein
@@ -54,7 +60,8 @@ Liste steht in [`scoreboard-config.yml`](./scoreboard-config.yml).
 
 Rechts seht ihr dauerhaft:
 
-- **Punktestand aller Gruppen**, sortiert nach Rang – für alle Spieler gleich.
+- **Punktestand aller Gruppen**, sortiert nach Rang – für alle Spieler gleich. Die aktuell
+  führende Gruppe ist zusätzlich mit einem Stern markiert.
 - **Euer eigener Beitrag**: wie viele der Gruppenpunkte ihr persönlich beigesteuert habt.
 
 ## Schutz
@@ -67,4 +74,5 @@ Rechts seht ihr dauerhaft:
 ## Spielende
 
 Der Admin beendet den Contest per `/bc end` (oder automatisch nach Ablauf der Spielzeit). Danach
-ist euer Bauplatz eingefroren, der Endstand und die Gewinnergruppe werden im Chat bekanntgegeben.
+ist euer Bauplatz eingefroren, der Endstand wird im Chat bekanntgegeben und die Gewinnergruppe
+zusätzlich mit einer eigenen Ansage und einem Sound für alle gefeiert.

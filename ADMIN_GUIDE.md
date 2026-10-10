@@ -4,6 +4,12 @@ Diese Anleitung richtet sich an Server-Admins, die einen Buildcontest einrichten
 Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punktetabelle in
 [`scoreboard-config.yml`](./scoreboard-config.yml).
 
+> **Hinweis:** `rules.md` beschreibt das vereinbarte Zielregelwerk; diese Anleitung beschreibt den
+> aktuell implementierten Stand. Beide sind noch nicht vollständig deckungsgleich – offene Punkte
+> stehen in [`TODO.md`](./TODO.md). Insbesondere arbeitet das Plugin aktuell noch mit einer
+> eigenen, bei jedem `/bc start` neu erzeugten Bauplatz-Welt statt einer einzigen gemeinsamen
+> Survival-Welt, und kennt noch kein `/bc pause`/`/bc resume`.
+
 ## Voraussetzungen
 
 - Spigot- oder **Paper-Server für Minecraft 26.3** (siehe `pom.xml#spigot.version` / `plugin.yml#api-version`).
@@ -105,6 +111,25 @@ rules.md#punktesystem). Eigene Werte setzen:
    automatisch direkt nach `/bc end` passiert. Spätestens der nächste `/bc start` ersetzt die Welt
    ohnehin komplett.
 
+## Automatikmodus (Rot gegen Blau)
+
+Zusatzfunktion des Plugins, (noch) nicht Teil des verhandelten `rules.md`: Ein schnelles,
+selbsterklärendes Event ohne manuelle Vorbereitung.
+
+```
+/bc automode 2x2
+```
+oder
+```
+/bc automode 2x4
+```
+
+Setzt Gruppenanzahl (2), Gruppengröße (2 bzw. 4) und Bauplatzgröße (10×10 bzw. 20×20) automatisch,
+benennt die Gruppen **Rot** und **Blau** und aktiviert die Ball-basierte Team-Wahl: Spieler
+bekommen in der Eingangswelt einen roten und einen blauen Wolle-"Ball" ins Inventar und wählen per
+Rechtsklick ihr Team. Eine schwebende Tafel in der Eingangswelt zeigt live, wer in welcher Gruppe
+ist. Sobald beide Gruppen voll sind, startet der Contest automatisch – kein `/bc start` nötig.
+
 ## Persistenz
 
 Gruppenmitgliedschaft, Bauplätze, gewertete Blöcke und der Spielstatus werden zusätzlich zur
@@ -126,6 +151,7 @@ Timer wird dabei korrekt mit der verbleibenden Restzeit fortgesetzt.
 | `/bc start` | Welt neu erzeugen, Bauplätze generieren, Scores zurücksetzen, Contest starten |
 | `/bc end` | Contest beenden, Endstand bekanntgeben |
 | `/bc deleteworld` | Bauplatz-Welt löschen (siehe `game.auto-delete-world-on-end`) |
+| `/bc automode 2x2` / `/bc automode 2x4` | Schnellstart-Automatikmodus aktivieren (siehe oben) |
 | `/bc reload` | `config.yml` und `scoreboard-config.yml` neu laden |
 
 Zusätzlich für Spieler nützlich: `/bc tp` teleportiert die eigene (online) Gruppe gemeinsam zu

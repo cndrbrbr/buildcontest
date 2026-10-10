@@ -20,6 +20,8 @@
 #                       bewusst GEDECKELT - alle Eintraege hier sind gleich
 #                       viel wert, es gibt keine weitere Eskalation nach oben.
 #
+# Einzelne Blockwerte duerfen von der Tier-Stufe abweichen; 'scores' ist massgeblich.
+# Die Startwerte fuer besonders aufwendige kompakte Bloecke sind neu balanciert.
 # Alles was hier nicht gelistet ist, zaehlt automatisch default_score (0).
 #
 # Formvarianten-Vererbung (spart tausende Einzelzeilen):
@@ -164,10 +166,10 @@ scores:
   WARPED_STEM: 1
   WARPED_PLANKS: 1
 
-  # ===================== TIER 2 (3 Punkte) =====================
+  # ===================== TIER 2 (ueblicherweise 3 Punkte) =====================
   # Leichte Verarbeitung (Ofen/Stonecutter) oder haeufige Nether-/Deko-Bloecke
 
-  STONE_BRICKS: 3
+  STONE_BRICKS: 2
   CHISELED_STONE_BRICKS: 3
   CRACKED_STONE_BRICKS: 3
   MOSSY_STONE_BRICKS: 3
@@ -231,24 +233,24 @@ scores:
   OBSIDIAN: 3
   BELL: 3
 
-  # -- Glas (klar + 16 Farben) --
-  GLASS: 3
-  WHITE_STAINED_GLASS: 3
-  ORANGE_STAINED_GLASS: 3
-  MAGENTA_STAINED_GLASS: 3
-  LIGHT_BLUE_STAINED_GLASS: 3
-  YELLOW_STAINED_GLASS: 3
-  LIME_STAINED_GLASS: 3
-  PINK_STAINED_GLASS: 3
-  GRAY_STAINED_GLASS: 3
-  LIGHT_GRAY_STAINED_GLASS: 3
-  CYAN_STAINED_GLASS: 3
-  PURPLE_STAINED_GLASS: 3
-  BLUE_STAINED_GLASS: 3
-  BROWN_STAINED_GLASS: 3
-  GREEN_STAINED_GLASS: 3
-  RED_STAINED_GLASS: 3
-  BLACK_STAINED_GLASS: 3
+  # -- Glas (klar + 16 Farben; 2 Punkte) --
+  GLASS: 2
+  WHITE_STAINED_GLASS: 2
+  ORANGE_STAINED_GLASS: 2
+  MAGENTA_STAINED_GLASS: 2
+  LIGHT_BLUE_STAINED_GLASS: 2
+  YELLOW_STAINED_GLASS: 2
+  LIME_STAINED_GLASS: 2
+  PINK_STAINED_GLASS: 2
+  GRAY_STAINED_GLASS: 2
+  LIGHT_GRAY_STAINED_GLASS: 2
+  CYAN_STAINED_GLASS: 2
+  PURPLE_STAINED_GLASS: 2
+  BLUE_STAINED_GLASS: 2
+  BROWN_STAINED_GLASS: 2
+  GREEN_STAINED_GLASS: 2
+  RED_STAINED_GLASS: 2
+  BLACK_STAINED_GLASS: 2
 
   # -- Beton (16 Farben) --
   WHITE_CONCRETE: 3
@@ -352,7 +354,7 @@ scores:
   WAXED_OXIDIZED_COPPER_CHAIN: 3
   COAL_BLOCK: 3
 
-  # ===================== TIER 3 (6 Punkte) =====================
+  # ===================== TIER 3 (ueblicherweise 6 Punkte) =====================
   # Moderate Seltenheit: Tiefbau-Standard, Ozean-/Nether-Bossgebiete
 
   IRON_ORE: 6
@@ -361,7 +363,7 @@ scores:
   DEEPSLATE_REDSTONE_ORE: 6
   LAPIS_ORE: 6
   DEEPSLATE_LAPIS_ORE: 6
-  IRON_BLOCK: 6
+  IRON_BLOCK: 10
   RAW_IRON_BLOCK: 6
   REDSTONE_BLOCK: 6
   LAPIS_BLOCK: 6
@@ -379,12 +381,12 @@ scores:
   SCULK_SENSOR: 6
   BLUE_ICE: 6
 
-  # ===================== TIER 4 (12 Punkte) =====================
+  # ===================== TIER 4 (ueblicherweise 12 Punkte) =====================
   # Hohe Seltenheit: Endgame-Erze roh, mehrstufige Mob-Farmen
 
   GOLD_ORE: 12
   DEEPSLATE_GOLD_ORE: 12
-  GOLD_BLOCK: 12
+  GOLD_BLOCK: 20
   RAW_GOLD_BLOCK: 12
   DIAMOND_ORE: 12
   DEEPSLATE_DIAMOND_ORE: 12
@@ -396,11 +398,11 @@ scores:
   VERDANT_FROGLIGHT: 12
   PEARLESCENT_FROGLIGHT: 12
 
-  # ===================== TIER 5 (25 Punkte) =====================
+  # ===================== TIER 5 (ueblicherweise 25 Punkte) =====================
   # Seltenste reguläre Bloecke
 
-  DIAMOND_BLOCK: 25
-  EMERALD_BLOCK: 25
+  DIAMOND_BLOCK: 40
+  EMERALD_BLOCK: 40
   ANCIENT_DEBRIS: 25
 
   # ================= TIER 6 - UNIKAT-CAP (50 Punkte) =================
