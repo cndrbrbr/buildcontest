@@ -1,5 +1,6 @@
 package io.github.cndrbrbr.buildcontest.listener;
 
+import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import io.github.cndrbrbr.buildcontest.manager.GameStateManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
@@ -26,18 +27,28 @@ public final class BlockListener implements Listener {
     private final PlotManager plotManager;
     private final GameStateManager gameStateManager;
     private final ScoreboardManager scoreboardManager;
+    private final MainConfig mainConfig;
 
     public BlockListener(ScoreManager scoreManager, PlotManager plotManager,
-                          GameStateManager gameStateManager, ScoreboardManager scoreboardManager) {
+                          GameStateManager gameStateManager, ScoreboardManager scoreboardManager,
+                          MainConfig mainConfig) {
         this.scoreManager = scoreManager;
         this.plotManager = plotManager;
         this.gameStateManager = gameStateManager;
         this.scoreboardManager = scoreboardManager;
+        this.mainConfig = mainConfig;
     }
 
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onPlace(BlockPlaceEvent event) {
         Block block = event.getBlock();
+
+        if (isBlockedByPause(block)) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cDer Contest ist pausiert - keine Platzierungen möglich.");
+            return;
+        }
+
         Optional<Plot> plotOpt = plotManager.getPlotAt(block.getWorld().getName(), block.getX(), block.getZ());
         if (plotOpt.isEmpty()) {
             return;
@@ -59,6 +70,13 @@ public final class BlockListener implements Listener {
     @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
     public void onBreak(BlockBreakEvent event) {
         Block block = event.getBlock();
+
+        if (isBlockedByPause(block)) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cDer Contest ist pausiert - kein Abbau möglich.");
+            return;
+        }
+
         Optional<Plot> plotOpt = plotManager.getPlotAt(block.getWorld().getName(), block.getX(), block.getZ());
         if (plotOpt.isEmpty()) {
             return;
@@ -72,5 +90,18 @@ public final class BlockListener implements Listener {
 
         scoreManager.registerBreak(block, plot);
         scoreboardManager.refreshAll();
+    }
+
+    /**
+     * Waehrend PAUSED wird die GESAMTE Contest-Welt gegenueber Block-
+     * Platzierung/-Abbau eingefroren, nicht nur die Bauplaetze - damit auch
+     * wettbewerbsrelevantes Farmen/Sammeln ausserhalb der Grundstuecke keinen
+     * Vorteil waehrend der Pause bringt (siehe
+     * rules.md#ablauf-unterbrechung-und-spielende: "Technisch kann dafuer
+     * die gesamte Contest-Welt gegenueber Spieleraktionen eingefroren
+     * werden").
+     */
+    private boolean isBlockedByPause(Block block) {
+        return gameStateManager.isPaused() && block.getWorld().getName().equals(mainConfig.getWorldName());
     }
 }

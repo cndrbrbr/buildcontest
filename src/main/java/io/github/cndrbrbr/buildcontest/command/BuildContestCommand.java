@@ -36,7 +36,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
 
     private static final List<String> SUBCOMMANDS = List.of(
             "join", "setgroups", "setgroupsize", "setplotsize",
-            "setdistance", "setscore", "assign", "start", "end", "deleteworld", "automode",
+            "setdistance", "setscore", "assign", "start", "pause", "resume", "end", "deleteworld", "automode",
             "placestartstones", "reload");
 
     private final BuildContestPlugin plugin;
@@ -95,6 +95,8 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case "assign" -> requireAdmin(sender) && handleAssign(sender, args);
             case "start" -> requireAdmin(sender)
                     && handleStart(sender, args.length > 1 && "confirm".equalsIgnoreCase(args[1]));
+            case "pause" -> requireAdmin(sender) && handlePause(sender);
+            case "resume" -> requireAdmin(sender) && handleResume(sender);
             case "end" -> requireAdmin(sender) && handleEnd(sender);
             case "deleteworld" -> requireAdmin(sender) && handleDeleteWorld(sender);
             case "automode" -> requireAdmin(sender) && requireNotRunning(sender) && handleAutomode(sender, args);
@@ -357,6 +359,39 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         scoreboardManager.refreshAll();
         entryTeleportManager.teleportAllNewEntrants();
         sender.sendMessage("§aBuildcontest gestartet. Neue Welt erzeugt, Bauplätze generiert und planiert.");
+        return true;
+    }
+
+    /**
+     * Haelt Timer und wettbewerbsrelevante Spieleraktionen an (siehe
+     * rules.md#ablauf-unterbrechung-und-spielende, BlockListener#isBlockedByPause).
+     */
+    private boolean handlePause(CommandSender sender) {
+        if (!gameStateManager.isRunning()) {
+            sender.sendMessage("§cEs läuft aktuell kein Contest.");
+            return true;
+        }
+        if (gameStateManager.isPaused()) {
+            sender.sendMessage("§cDer Contest ist bereits pausiert.");
+            return true;
+        }
+        gameStateManager.pause();
+        plugin.getServer().broadcastMessage("§eDer Buildcontest wurde pausiert.");
+        return true;
+    }
+
+    /** Setzt denselben Contest mit allen Punkten und derselben Welt fort (siehe GameStateManager#resume). */
+    private boolean handleResume(CommandSender sender) {
+        if (!gameStateManager.isRunning()) {
+            sender.sendMessage("§cEs läuft aktuell kein Contest.");
+            return true;
+        }
+        if (!gameStateManager.isPaused()) {
+            sender.sendMessage("§cDer Contest ist nicht pausiert.");
+            return true;
+        }
+        gameStateManager.resume();
+        plugin.getServer().broadcastMessage("§aDer Buildcontest wurde fortgesetzt.");
         return true;
     }
 

@@ -55,16 +55,16 @@
 ## P1 – Wichtige Spielfunktionen
 
 ### 5. Zustandsmaschine und sichere Administration
-- [ ] Zustände SETUP, LOBBY, PREPARING, RUNNING, PAUSED und FINISHED implementieren.
-- [ ] `/bc pause` / `/bc resume`: Timer und wettbewerbsrelevante Spieleraktionen anhalten/fortsetzen.
-- [ ] Pausenmodus so absichern, dass auch Farmen, Handel und indirekte Änderungen keine Wettbewerbsvorteile bringen.
-- [ ] `/bc start` darf laufende oder pausierte Wettbewerbe nicht überschreiben.
-- [ ] `/bc end` friert Endstand und Bauplätze ein; Gleichstände als gemeinsame Sieger behandeln.
-- [ ] Ergebnishistorie sichern, **kein** Weltbackup anlegen (bewusste Entscheidung 11B).
-- [ ] Löschen/Ersetzen einer abgeschlossenen Contest-Welt nur nach ausdrücklicher Adminbestätigung; keine versehentliche Löschung der Lobbywelt.
-- [ ] `game.auto-delete-world-on-end` standardmäßig deaktivieren; Besichtigung nach Spielende ermöglichen.
+- [x] Zustände SETUP, LOBBY, PREPARING, RUNNING, PAUSED und FINISHED implementieren. (vereinfacht: SETUP/LOBBY/PREPARING als ein gemeinsamer "noch nicht gestartet"-Zustand, da das Plugin kein Verhalten unterschiedlich zwischen diesen drei gated - RUNNING/PAUSED/FINISHED vollstaendig abgebildet, siehe GameStateManager-Klassendoc)
+- [x] `/bc pause` / `/bc resume`: Timer und wettbewerbsrelevante Spieleraktionen anhalten/fortsetzen. (GameStateManager#pause/resume mit korrekter Restzeit-Uebernahme, live verifiziert)
+- [x] Pausenmodus so absichern, dass auch Farmen, Handel und indirekte Änderungen keine Wettbewerbsvorteile bringen. (BlockListener sperrt waehrend PAUSED die GESAMTE Contest-Welt fuer Platzierung/Abbau, nicht nur Bauplaetze - siehe rules.md: "kann die gesamte Contest-Welt eingefroren werden"; Handel/Item-Weitergabe zwischen Spielern bleibt eine bekannte Luecke, da es dafuer kein einzelnes Bukkit-Event gibt)
+- [x] `/bc start` darf laufende oder pausierte Wettbewerbe nicht überschreiben. (isRunning() bleibt waehrend PAUSED true, bestehender Guard greift automatisch mit; live verifiziert)
+- [x] `/bc end` friert Endstand und Bauplätze ein; Gleichstände als gemeinsame Sieger behandeln. (bereits vorhanden; keine explizite Rang-Nummerierung, dadurch automatisch kein Stichentscheid bei Gleichstand)
+- [x] Ergebnishistorie sichern, **kein** Weltbackup anlegen (bewusste Entscheidung 11B). (P0-4, results.yml)
+- [x] Löschen/Ersetzen einer abgeschlossenen Contest-Welt nur nach ausdrücklicher Adminbestätigung; keine versehentliche Löschung der Lobbywelt. (P0-1)
+- [x] `game.auto-delete-world-on-end` standardmäßig deaktiviert; Besichtigung nach Spielende möglich. (bereits vorhanden, Default false)
 
-**Abnahme:** Pause/Resume und Ende funktionieren nach Neustart; neue Contests löschen nie stillschweigend alte Bauwerke.
+**Abnahme:** Pause/Resume und Ende funktionieren nach Neustart; neue Contests löschen nie stillschweigend alte Bauwerke. ✅ Pause/Resume/Start-waehrend-PAUSED live auf Spigot 26.3 verifiziert; Persistenz des Pause-Zustands unit-getestet (Server-Neustart waehrend PAUSED noch nicht live mit echtem Neustart durchgespielt).
 
 ### 6. Teams, UUIDs und Handel
 - [ ] Gruppenmitgliedschaften über UUID statt über Namen führen.

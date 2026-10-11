@@ -65,8 +65,10 @@ public final class DataStore {
 
         GameStateManager.State state = gameStateManager.exportState();
         yaml.set("state.running", state.running());
+        yaml.set("state.paused", state.paused());
         yaml.set("state.frozen", state.frozen());
         yaml.set("state.end-timestamp", state.endTimestampMillis());
+        yaml.set("state.remaining-at-pause", state.remainingMillisAtPause());
         yaml.set("state.teleported-players",
                 state.teleportedPlayers().stream().map(UUID::toString).toList());
 
@@ -147,8 +149,10 @@ public final class DataStore {
                 .collect(Collectors.toCollection(LinkedHashSet::new));
         gameStateManager.importState(new GameStateManager.State(
                 yaml.getBoolean("state.running", false),
+                yaml.getBoolean("state.paused", false),
                 yaml.getBoolean("state.frozen", false),
                 yaml.getLong("state.end-timestamp", -1),
+                yaml.getLong("state.remaining-at-pause", -1),
                 teleportedPlayers));
 
         groupManager.importMembership(readMembership(yaml));

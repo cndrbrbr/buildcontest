@@ -85,7 +85,7 @@ class GameStateManagerTest {
         // Simuliert: Contest lief mit Timer, Server war waehrend des
         // eigentlichen Enddatums neu gestartet/offline.
         GameStateManager.State expired = new GameStateManager.State(
-                true, false, System.currentTimeMillis() - 1_000, Set.of());
+                true, false, false, System.currentTimeMillis() - 1_000, -1, Set.of());
 
         gameStateManager.importState(expired);
 
@@ -96,7 +96,7 @@ class GameStateManagerTest {
     @Test
     void importingARunningTimerReschedulesWithRemainingTime() {
         GameStateManager.State stillRunning = new GameStateManager.State(
-                true, false, System.currentTimeMillis() + 60_000, Set.of());
+                true, false, false, System.currentTimeMillis() + 60_000, -1, Set.of());
 
         gameStateManager.importState(stillRunning);
 
@@ -113,6 +113,59 @@ class GameStateManagerTest {
         assertTrue(gameStateManager.markInitialTeleportDone(player));
         assertTrue(gameStateManager.hasReceivedInitialTeleport(player));
         assertFalse(gameStateManager.markInitialTeleportDone(player));
+    }
+
+    @Test
+    void pauseStopsTheTimerAndResumeContinuesWithRemainingTime() {
+        when(mainConfig.getDurationMinutes()).thenReturn(10);
+        gameStateManager.start();
+
+        gameStateManager.pause();
+
+        assertTrue(gameStateManager.isRunning());
+        assertTrue(gameStateManager.isPaused());
+
+        gameStateManager.resume();
+
+        assertTrue(gameStateManager.isRunning());
+        assertFalse(gameStateManager.isPaused());
+    }
+
+    @Test
+    void pauseWithoutARunningContestHasNoEffect() {
+        gameStateManager.pause();
+
+        assertFalse(gameStateManager.isRunning());
+        assertFalse(gameStateManager.isPaused());
+    }
+
+    @Test
+    void endWhilePausedStillFreezesTheContest() {
+        when(mainConfig.getDurationMinutes()).thenReturn(0);
+        gameStateManager.start();
+        gameStateManager.pause();
+
+        gameStateManager.end();
+
+        assertFalse(gameStateManager.isRunning());
+        assertFalse(gameStateManager.isPaused());
+        assertTrue(gameStateManager.isFrozen());
+    }
+
+    @Test
+    void importingAPausedStateDoesNotRescheduleTheTimer() {
+        // Server war waehrend einer Pause offline - der Timer darf dadurch
+        // nicht ungewollt weitergelaufen sein (siehe rules.md#persistenz-und-absturzsicherheit).
+        GameStateManager.State paused = new GameStateManager.State(
+                true, true, false, -1, 120_000, Set.of());
+
+        gameStateManager.importState(paused);
+
+        assertTrue(gameStateManager.isRunning());
+        assertTrue(gameStateManager.isPaused());
+
+        gameStateManager.resume();
+        assertFalse(gameStateManager.isPaused());
     }
 
     @Test

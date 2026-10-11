@@ -63,7 +63,7 @@ public final class BuildContestPlugin extends JavaPlugin {
         scheduleAutosave();
 
         getServer().getPluginManager().registerEvents(
-                new BlockListener(scoreManager, plotManager, gameStateManager, scoreboardManager), this);
+                new BlockListener(scoreManager, plotManager, gameStateManager, scoreboardManager, mainConfig), this);
         getServer().getPluginManager().registerEvents(
                 new ProtectionListener(plotManager, groupManager), this);
         getServer().getPluginManager().registerEvents(

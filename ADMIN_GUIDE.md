@@ -115,6 +115,12 @@ rules.md#punktesystem). Eigene Werte setzen:
    der Bauplatzgrenzen).
 4. **Laufenlassen**: Scoreboard, Schutzmechanismen und Punktewertung laufen automatisch (siehe
    rules.md#bauregeln, #schutzmechanismen, #scoreboard-anzeige).
+
+   Bei Bedarf (z. B. Pause, technisches Problem) `/bc pause` ausführen: Timer hält an, die
+   **gesamte** Contest-Welt wird für Platzierung/Abbau eingefroren (nicht nur die Bauplätze) –
+   damit niemand während der Pause heimlich weiterbaut oder farmt. `/bc resume` setzt denselben
+   Contest mit dem exakten Punktestand und der verbleibenden Restzeit fort. `/bc start` lehnt
+   sowohl einen laufenden als auch einen pausierten Contest ab.
 5. **Ende**:
    ```
    /bc end
@@ -214,6 +220,8 @@ spielentscheidenden Einstellungen lassen sich erst nach `/bc end` wieder ändern
 | `/bc assign <spieler> <gruppe>` | Spieler einer Gruppe zuweisen |
 | `/bc start` | Neuen Contest starten: Welt neu erzeugen, Bauplätze generieren, Scores zurücksetzen (abgelehnt, falls bereits ein Contest läuft) |
 | `/bc start confirm` | Wie `/bc start`, aber mit ausdrücklicher Bestätigung, falls noch eine alte Bauplatz-Welt existiert und ersetzt werden soll |
+| `/bc pause` | Timer anhalten, gesamte Contest-Welt für Platzierung/Abbau einfrieren |
+| `/bc resume` | Denselben Contest mit verbleibender Restzeit fortsetzen |
 | `/bc end` | Contest beenden, Endstand bekanntgeben |
 | `/bc deleteworld` | Bauplatz-Welt löschen (siehe `game.auto-delete-world-on-end`) |
 | `/bc automode <2x1\|2x2\|2x4\|2xn>` | Schnellstart-Preset aktivieren (siehe oben, konfigurierte Spieldauer) |
