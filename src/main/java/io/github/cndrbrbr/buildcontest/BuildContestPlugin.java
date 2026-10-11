@@ -83,6 +83,11 @@ public final class BuildContestPlugin extends JavaPlugin {
         getCommand("bc").setExecutor(command);
         getCommand("bc").setTabCompleter(command);
 
+        // Start-Steine sollen auch ganz ohne manuellen Admin-Schritt
+        // nutzbar sein - beim allerersten Serverstart automatisch am
+        // Weltspawn der Eingangswelt aufstellen, falls noch nie passiert.
+        automodeManager.placeStartStonesIfMissing();
+
         getLogger().info("Buildcontest aktiviert.");
     }
 

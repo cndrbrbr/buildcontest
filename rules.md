@@ -18,7 +18,7 @@ Es gibt **keine separate Farmwelt und keine separate Bauwelt**. Außerhalb der B
 - Auch während RUNNING dürfen Gruppen außerhalb der Grundstücke Wege, Brücken, Minen, Farmen und andere Survival-Bauten errichten. Dafür gibt es keine Contestpunkte.
 - Die Eingangswelt läuft **nicht im Überlebensmodus** (z. B. Adventure-Modus) - Spieler können dort nichts bauen oder abbauen. Der Admin gestaltet sie frei und beliebig ansprechend.
 - Die Contest-Welt hat für alle Teilnehmer den **Überlebensmodus** und den Schwierigkeitsgrad **Normal**.
-- Beim **erstmaligen Eintritt** in einen Contest wird das bisherige Inventar eines Spielers gesichert und dann geleert - jeder beginnt mit leerem Inventar. Beim **Verlassen** des Contests (Rückkehr in die Eingangswelt, z. B. nach `/bc end`) wird das gesicherte Inventar wiederhergestellt; während des Contests gesammelte oder getragene Gegenstände gehen dabei verloren.
+- Beim **erstmaligen Eintritt** in einen Contest wird das bisherige Inventar eines Spielers gesichert und dann geleert - jeder beginnt mit leerem Inventar und **voller Gesundheit**. Beim **Verlassen** des Contests (Rückkehr in die Eingangswelt, z. B. nach `/bc end`) wird das gesicherte Inventar wiederhergestellt; während des Contests gesammelte oder getragene Gegenstände gehen dabei verloren.
 
 ## 3. Vorbereitung und Bauplätze
 

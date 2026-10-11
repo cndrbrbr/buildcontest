@@ -39,7 +39,8 @@ den Steinen zeigt, ob gerade schon ein Contest läuft (dann warten, bis er vorbe
 ## Eingangswelt, Contest und Inventar
 
 - In der Eingangswelt könnt ihr nichts bauen oder abbauen (Adventure-Modus) – dort wartet ihr nur.
-- Sobald ihr in den Contest kommt, wechselt ihr automatisch in den **Überlebensmodus**.
+- Sobald ihr in den Contest kommt, wechselt ihr automatisch in den **Überlebensmodus** mit
+  **voller Gesundheit**.
 - Euer **mitgebrachtes Inventar wird beim Eintritt gesichert und geleert** – ihr startet also
   immer mit leeren Taschen, fair für alle. Wenn ihr den Contest wieder verlasst (z. B. nach
   `/bc end`), bekommt ihr dieses alte Inventar zurück – was ihr im Contest gesammelt/gebaut

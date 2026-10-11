@@ -149,6 +149,11 @@ unbegrenzt).
 
 ### Start-Steine
 
+Beim allerersten Serverstart stellt das Plugin die Start-Steine **automatisch am Weltspawn** der
+Eingangswelt auf, falls das noch nie passiert ist (weder automatisch noch manuell) – es ist also
+**kein** manueller Schritt nötig, damit Spieler sofort selbst starten können. Zum erneuten
+Platzieren an einer anderen Stelle (z. B. nach einem Umbau der Lobby):
+
 ```
 /bc placestartstones
 ```

@@ -392,13 +392,43 @@ public final class AutomodeManager implements Listener {
      * Schild) an der aktuellen Position des Admins auf, plus eine feste
      * Statusanzeige (siehe rules.md#schnellstart-presets-und-start-steine).
      * Ein Rechtsklick auf das Schild loest {@link #activateFromStartStone}
-     * aus.
+     * aus. Merkt sich dauerhaft (config.yml), dass Steine existieren, damit
+     * {@link #placeStartStonesIfMissing} sie nicht zusaetzlich am Weltspawn
+     * aufstellt.
      */
     public void placeStartStones(Player admin) {
         Location base = admin.getLocation();
+        if (placeStartStonesAt(base)) {
+            admin.sendMessage("§aStart-Steine (2x1/2x2/2x4/2xn) aufgestellt.");
+        }
+    }
+
+    /**
+     * Stellt die Start-Steine automatisch am Weltspawn der Eingangswelt auf,
+     * falls das noch nie passiert ist (weder manuell per
+     * {@link #placeStartStones} noch bereits automatisch) - damit ein
+     * Contest auch ganz ohne jeden manuellen Admin-Schritt per Stein
+     * begonnen werden kann. Wird einmalig beim Serverstart aufgerufen, siehe
+     * BuildContestPlugin#onEnable.
+     */
+    public void placeStartStonesIfMissing() {
+        if (plugin.getConfig().getBoolean("startstones.placed", false)) {
+            return;
+        }
+        if (Bukkit.getWorlds().isEmpty()) {
+            return;
+        }
+        Location spawn = Bukkit.getWorlds().get(0).getSpawnLocation();
+        if (placeStartStonesAt(spawn)) {
+            plugin.getLogger().info("Start-Steine (2x1/2x2/2x4/2xn) automatisch am Weltspawn der Eingangswelt "
+                    + "aufgestellt (siehe /bc placestartstones, um sie woanders neu zu platzieren).");
+        }
+    }
+
+    private boolean placeStartStonesAt(Location base) {
         World world = base.getWorld();
         if (world == null) {
-            return;
+            return false;
         }
         int baseX = base.getBlockX();
         int y = base.getBlockY();
@@ -423,7 +453,10 @@ public final class AutomodeManager implements Listener {
 
         boardLocation = new Location(world, baseX + (presets.length - 1) / 2.0, y + 2.5, z);
         spawnStatusBoard();
-        admin.sendMessage("§aStart-Steine (2x1/2x2/2x4/2xn) aufgestellt.");
+
+        plugin.getConfig().set("startstones.placed", true);
+        plugin.saveConfig();
+        return true;
     }
 
     private void spawnStatusBoard() {

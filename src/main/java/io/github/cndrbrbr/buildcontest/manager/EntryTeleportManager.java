@@ -73,6 +73,8 @@ public final class EntryTeleportManager {
         inventoryVaultManager.saveAndClear(player);
         player.teleport(destinationOpt.get());
         player.setGameMode(GameMode.SURVIVAL);
+        // Fairer Start fuer alle - volle Gesundheit unabhaengig vom Zustand davor.
+        player.setHealth(player.getMaxHealth());
         player.sendMessage("§aDu wurdest einmalig zu eurem Bauplatz teleportiert.");
     }
 
