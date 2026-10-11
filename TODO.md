@@ -89,16 +89,30 @@
 - [ ] Admin- und Spieler-Permissions dokumentieren und testen.
 - [ ] Tab-Completion, Fehlermeldungen und `/bc help` aktualisieren.
 
+### 9. Schnellstart-Presets und Start-Steine
+- [x] Preset-Familie `2x1`/`2x2`/`2x4`/`2xn` umsetzen (immer 2 Gruppen Rot/Blau); bisheriges `1x1`-Preset durch `2x1` ersetzt. (AutomodeManager-Umbau)
+- [x] `2x1`: keine Ballwahl, erste zwei Beitretende ohne Gruppe werden zufällig Rot/Blau zugewiesen. (randomAssign, live verifiziert)
+- [x] `2xn`: alle aktuell Anwesenden ohne Gruppe sofort zufällig halbieren, kein Ball, keine Wartephase. (activateInstantSplit)
+- [x] `/bc placestartstones`: beschriftete Steine (einer je Preset) in der Eingangswelt an der Admin-Position platzieren. (Stein+Schild+PDC-Tag, live verifiziert)
+- [x] Stein-Rechtsklick löst dasselbe Preset wie `/bc automode <preset>` aus, aber immer mit fester 30-Minuten-Spieldauer (unabhängig von `game.duration-minutes`); `/bc automode` durch den Admin bleibt bei der konfigurierten Dauer (Standard unbegrenzt). (GameStateManager#start(int)-Override, live verifiziert)
+- [x] Nur ein Contest/eine Teamwahl gleichzeitig: Start-Steine während eines laufenden Contests/einer laufenden Teamwahl inaktiv, mit Hinweis an den Klickenden. (gameRunningOrSelectionInProgress, inkl. Fix: /bc end setzt haengen gebliebenen Wartezustand zurueck)
+- [x] Status-Anzeige in der Eingangswelt (aktiv/bereit), die bei Contest-Start/-Ende aktualisiert wird. (festes TextDisplay an den Steinen; GameStateManager#setOnTimerEnd stellt sicher, dass auch ein natuerlicher Zeitablauf die Anzeige zuruecksetzt)
+- [x] Eingangswelt-Gamemode auf Adventure (nicht Survival) setzen, bei Join und bei Rückkehr aus dem Contest. (PlayerConnectionListener, BuildContestCommand#teleportAllBackToEntryWorld, live verifiziert)
+- [x] Contest-Welt-Gamemode auf Survival und Difficulty auf Normal setzen (Welt bei Erzeugung, Spieler beim Eintritt). (WorldManager#regenerate, EntryTeleportManager, live verifiziert)
+- [x] Inventar beim erstmaligen Contest-Eintritt sichern und leeren; beim Verlassen (Rückkehr in die Eingangswelt) das gesicherte Inventar wiederherstellen (ersetzt, nicht zusammengeführt). (InventoryVaultManager, live verifiziert - nicht ueber Serverneustart persistiert, wie der Automode-Wartezustand)
+
+**Abnahme:** Ohne Admin online lässt sich per Start-Stein ein 30-minütiger Contest beginnen; der Admin kann per Befehl weiterhin unbegrenzt spielen. Eingangswelt bleibt unveränderlich (Adventure), Contest-Welt ist Survival/Normal, Spieler starten mit leerem und enden mit ihrem alten Inventar. ✅ Vollständig live auf Spigot 26.3 verifiziert.
+
 ## P2 – Qualität und Dokumentation
 
-### 9. Punktetabelle ausbalancieren
+### 10. Punktetabelle ausbalancieren
 - [ ] Sämtliche konfigurierten Blockwerte nach Beschaffungs- und Verarbeitungsaufwand systematisch durchgehen.
 - [ ] Glas-/Steinziegel-Werte sowie Eisen-, Gold-, Diamant- und Smaragdblöcke im Spiel testen.
 - [ ] Blockform-Vererbung, Container-Ausnahmen (Shulker Box, Beacon, Conduit) und maximale 50 Punkte prüfen.
 - [ ] Neue Materialnamen der Ziel-Minecraft-Version ergänzen; unbekannte Blöcke standardmäßig 0 Punkte.
 - [ ] Mit Test-Contests prüfen, ob Farmstrategien oder bestimmte Crafting-Rezepte unverhältnismäßig viele Punkte geben.
 
-### 10. Tests und Performance
+### 11. Tests und Performance
 - [ ] Unit-Tests für Score-Berechnung, Materialregeln, Verbindungsgraph und Teamzuordnung.
 - [ ] Integrationstests für Platzieren/Abbauen, WorldEdit, Kolben, Wasser, Explosionen, Wachstum und Mob-Griefing.
 - [ ] Multiplayer-Tests mit mehreren Teams, Besuchern, Handel und Gruppenwechseln.
@@ -106,7 +120,7 @@
 - [ ] Crash-/Recovery-Tests mit Datenbank und Weltzustand; Phantom- und Doppelzählungen ausschließen.
 - [ ] Prüfen, dass Bauplatzsuche auch bei mehreren Gruppen ohne endlose Generierung endet und brauchbare Fehlermeldungen liefert.
 
-### 11. Dokumentation und Veröffentlichung
+### 12. Dokumentation und Veröffentlichung
 - [ ] `README.md`, `ADMIN_GUIDE.md` und `PLAYER_GUIDE.md` an `rules.md` angleichen.
 - [ ] Konfigurationsbeispiele, Permission-Nodes, Adminbestätigung und Spielerregeln dokumentieren.
 - [ ] Unterschied zwischen **beschlossener Regel**, **implementierter Funktion** und **getesteter Funktion** sichtbar machen.

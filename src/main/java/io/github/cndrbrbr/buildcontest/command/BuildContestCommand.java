@@ -7,12 +7,14 @@ import io.github.cndrbrbr.buildcontest.manager.AutomodeManager;
 import io.github.cndrbrbr.buildcontest.manager.EntryTeleportManager;
 import io.github.cndrbrbr.buildcontest.manager.GameStateManager;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
+import io.github.cndrbrbr.buildcontest.manager.InventoryVaultManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
 import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.model.Group;
 import io.github.cndrbrbr.buildcontest.persistence.DataStore;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -34,7 +36,8 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
 
     private static final List<String> SUBCOMMANDS = List.of(
             "join", "setgroups", "setgroupsize", "setplotsize",
-            "setdistance", "setscore", "assign", "start", "end", "deleteworld", "automode", "reload");
+            "setdistance", "setscore", "assign", "start", "end", "deleteworld", "automode",
+            "placestartstones", "reload");
 
     private final BuildContestPlugin plugin;
     private final MainConfig mainConfig;
@@ -48,13 +51,14 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private final AutomodeManager automodeManager;
     private final EntryTeleportManager entryTeleportManager;
     private final DataStore dataStore;
+    private final InventoryVaultManager inventoryVaultManager;
 
     public BuildContestCommand(BuildContestPlugin plugin, MainConfig mainConfig, ScoreConfig scoreConfig,
                                 GroupManager groupManager, PlotManager plotManager,
                                 GameStateManager gameStateManager, ScoreboardManager scoreboardManager,
                                 ScoreManager scoreManager, WorldManager worldManager,
                                 AutomodeManager automodeManager, EntryTeleportManager entryTeleportManager,
-                                DataStore dataStore) {
+                                DataStore dataStore, InventoryVaultManager inventoryVaultManager) {
         this.plugin = plugin;
         this.mainConfig = mainConfig;
         this.scoreConfig = scoreConfig;
@@ -67,6 +71,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         this.automodeManager = automodeManager;
         this.entryTeleportManager = entryTeleportManager;
         this.dataStore = dataStore;
+        this.inventoryVaultManager = inventoryVaultManager;
     }
 
     @Override
@@ -93,6 +98,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case "end" -> requireAdmin(sender) && handleEnd(sender);
             case "deleteworld" -> requireAdmin(sender) && handleDeleteWorld(sender);
             case "automode" -> requireAdmin(sender) && requireNotRunning(sender) && handleAutomode(sender, args);
+            case "placestartstones" -> requireAdmin(sender) && handlePlaceStartStones(sender);
             case "reload" -> requireAdmin(sender) && handleReload(sender);
             default -> {
                 sender.sendMessage("§cUnbekannter Unterbefehl: " + sub);
@@ -161,7 +167,10 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     /**
      * Teleportiert bei Contest-Ende alle Spieler, die sich noch in der
      * Bauplatz-Welt befinden, zurueck in die Eingangswelt (Server-Hauptwelt),
-     * siehe rules.md#spielablauf--ende.
+     * siehe rules.md#spielablauf--ende. Dabei wird ihr vor Contest-Beginn
+     * gesichertes Inventar wiederhergestellt (siehe InventoryVaultManager)
+     * und der Adventure-Modus der Eingangswelt gesetzt (siehe
+     * rules.md#welten-und-fortbewegung).
      */
     private void teleportAllBackToEntryWorld() {
         World buildWorld = plugin.getServer().getWorld(mainConfig.getWorldName());
@@ -172,6 +181,8 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         Location entrySpawn = worlds.get(0).getSpawnLocation();
         for (Player player : new ArrayList<>(buildWorld.getPlayers())) {
             player.teleport(entrySpawn);
+            player.setGameMode(GameMode.ADVENTURE);
+            inventoryVaultManager.restoreIfPresent(player);
         }
     }
 
@@ -308,6 +319,19 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
      *                  ausdruecklich bestaetigen...").
      */
     public boolean handleStart(CommandSender sender, boolean confirmed) {
+        return handleStart(sender, confirmed, -1);
+    }
+
+    /**
+     * @param forcedDurationMinutes bei &gt; 0 ueberschreibt dies die
+     *                              konfigurierte game.duration-minutes fuer
+     *                              diesen einen Contest (siehe
+     *                              GameStateManager#start(int)) - genutzt
+     *                              von AutomodeManager fuer per Start-Stein
+     *                              ausgeloeste Contests (immer 30 Minuten,
+     *                              siehe rules.md#schnellstart-presets-und-start-steine).
+     */
+    public boolean handleStart(CommandSender sender, boolean confirmed, int forcedDurationMinutes) {
         if (gameStateManager.isRunning()) {
             sender.sendMessage("§cEin Contest läuft bereits. Erst /bc end ausführen, bevor ein neuer gestartet wird.");
             return true;
@@ -329,14 +353,20 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
 
         scoreManager.clear();
         plotManager.generatePlots(groupManager.getGroups().values());
-        gameStateManager.start();
+        gameStateManager.start(forcedDurationMinutes);
         scoreboardManager.refreshAll();
         entryTeleportManager.teleportAllNewEntrants();
         sender.sendMessage("§aBuildcontest gestartet. Neue Welt erzeugt, Bauplätze generiert und planiert.");
         return true;
     }
 
-    private boolean handleEnd(CommandSender sender) {
+    /**
+     * Oeffentlich, damit GameStateManager den vollen Ende-Ablauf (Endstand
+     * archivieren/bekanntgeben, Rueckteleport, Statusanzeige) auch bei einem
+     * natuerlichen Timer-Ablauf ausloesen kann, nicht nur bei explizitem
+     * {@code /bc end} (siehe GameStateManager#setOnTimerEnd).
+     */
+    public boolean handleEnd(CommandSender sender) {
         gameStateManager.end();
         teleportAllBackToEntryWorld();
         sender.sendMessage("§aBuildcontest beendet. Baufortschritt ist jetzt eingefroren.");
@@ -369,20 +399,37 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         if (mainConfig.isAutoDeleteWorldOnEnd()) {
             handleDeleteWorld(sender);
         }
+        automodeManager.cancelWaitingPhase();
+        automodeManager.showIdleStatus();
         return true;
     }
 
     private boolean handleAutomode(CommandSender sender, String[] args) {
         if (args.length < 2) {
-            sender.sendMessage("§eBenutzung: /bc automode <1x1|2x2|2x4>");
+            sender.sendMessage("§eBenutzung: /bc automode <2x1|2x2|2x4|2xn>");
             return true;
         }
         Optional<AutomodeManager.Preset> preset = AutomodeManager.Preset.parse(args[1]);
         if (preset.isEmpty()) {
-            sender.sendMessage("§cUnbekannter Modus: " + args[1] + " (erlaubt: 1x1, 2x2, 2x4)");
+            sender.sendMessage("§cUnbekannter Modus: " + args[1] + " (erlaubt: 2x1, 2x2, 2x4, 2xn)");
             return true;
         }
         automodeManager.activate(preset.get(), sender);
+        return true;
+    }
+
+    /**
+     * Stellt fuer jedes Automode-Preset einen beschrifteten Start-Stein an
+     * der aktuellen Position des Admins auf (siehe AutomodeManager#placeStartStones,
+     * rules.md#schnellstart-presets-und-start-steine) - damit ein Contest
+     * auch ohne anwesenden Admin beginnen kann.
+     */
+    private boolean handlePlaceStartStones(CommandSender sender) {
+        if (!(sender instanceof Player admin)) {
+            sender.sendMessage("§cNur als Spieler ausführbar (braucht eine Position in der Eingangswelt).");
+            return true;
+        }
+        automodeManager.placeStartStones(admin);
         return true;
     }
 

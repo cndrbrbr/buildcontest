@@ -35,10 +35,22 @@ public final class GameStateManager {
      * Serverneustart) keine zweite Teleport-Abkuerzung ermoeglicht.
      */
     private final Set<UUID> teleportedPlayers = new LinkedHashSet<>();
+    /**
+     * Wird (statt eines reinen end()) aufgerufen, wenn der Timer von selbst
+     * ablaeuft - damit auch ein natuerliches Spielende die volle
+     * Ende-Sequenz ausloest (Endstand archivieren/bekanntgeben, Spieler
+     * zurueckteleportieren, Automode-Statusanzeige zuruecksetzen), nicht nur
+     * die internen running/frozen-Flags. Siehe BuildContestPlugin#onEnable.
+     */
+    private Runnable onTimerEnd;
 
     public GameStateManager(BuildContestPlugin plugin, MainConfig mainConfig) {
         this.plugin = plugin;
         this.mainConfig = mainConfig;
+    }
+
+    public void setOnTimerEnd(Runnable onTimerEnd) {
+        this.onTimerEnd = onTimerEnd;
     }
 
     public boolean isRunning() {
@@ -51,6 +63,24 @@ public final class GameStateManager {
     }
 
     public void start() {
+        start(-1);
+    }
+
+    /**
+     * @param forcedDurationMinutes bei &gt; 0 wird diese Dauer statt der
+     *                              konfigurierten game.duration-minutes
+     *                              verwendet, OHNE die Konfiguration selbst
+     *                              zu veraendern - fuer per Start-Stein
+     *                              ausgeloeste Contests, die immer genau 30
+     *                              Minuten laufen sollen (siehe
+     *                              rules.md#schnellstart-presets-und-start-steine),
+     *                              waehrend per /bc automode durch einen
+     *                              Admin gestartete Contests weiterhin die
+     *                              konfigurierte (meist unbegrenzte) Dauer
+     *                              nutzen. &lt;= 0 bedeutet: konfigurierte
+     *                              Dauer verwenden.
+     */
+    public void start(int forcedDurationMinutes) {
         running = true;
         frozen = false;
         // Ein neuer Contest gibt JEDEM Spieler wieder einen frischen einmaligen
@@ -59,7 +89,7 @@ public final class GameStateManager {
         teleportedPlayers.clear();
         cancelTimer();
 
-        int durationMinutes = mainConfig.getDurationMinutes();
+        int durationMinutes = forcedDurationMinutes > 0 ? forcedDurationMinutes : mainConfig.getDurationMinutes();
         if (durationMinutes > 0) {
             endTimestampMillis = System.currentTimeMillis() + durationMinutes * 60_000L;
             scheduleTimer(durationMinutes * 60L * 20L);
@@ -76,7 +106,13 @@ public final class GameStateManager {
     }
 
     private void scheduleTimer(long delayTicks) {
-        timerTask = plugin.getServer().getScheduler().runTaskLater(plugin, this::end, Math.max(0, delayTicks));
+        timerTask = plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+            if (onTimerEnd != null) {
+                onTimerEnd.run();
+            } else {
+                end();
+            }
+        }, Math.max(0, delayTicks));
     }
 
     private void cancelTimer() {

@@ -5,6 +5,7 @@ import io.github.cndrbrbr.buildcontest.manager.EntryTeleportManager;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -47,6 +48,10 @@ public final class PlayerConnectionListener implements Listener {
         World primaryWorld = Bukkit.getWorlds().get(0);
         if (player.getWorld().equals(primaryWorld)) {
             player.teleport(primaryWorld.getSpawnLocation());
+            // Die Eingangswelt laeuft nicht im Ueberlebensmodus (siehe
+            // rules.md#welten-und-fortbewegung) - Spieler koennen dort nichts
+            // bauen/abbauen, aber mit Schildern/Start-Steinen interagieren.
+            player.setGameMode(GameMode.ADVENTURE);
         }
 
         // Erstmaliger Eintritt in einen laufenden Contest (z. B. per

@@ -3,6 +3,7 @@ package io.github.cndrbrbr.buildcontest.manager;
 import io.github.cndrbrbr.buildcontest.model.Group;
 import io.github.cndrbrbr.buildcontest.model.Plot;
 import org.bukkit.Bukkit;
+import org.bukkit.GameMode;
 import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -30,12 +31,14 @@ public final class EntryTeleportManager {
     private final GameStateManager gameStateManager;
     private final GroupManager groupManager;
     private final PlotManager plotManager;
+    private final InventoryVaultManager inventoryVaultManager;
 
     public EntryTeleportManager(GameStateManager gameStateManager, GroupManager groupManager,
-                                 PlotManager plotManager) {
+                                 PlotManager plotManager, InventoryVaultManager inventoryVaultManager) {
         this.gameStateManager = gameStateManager;
         this.groupManager = groupManager;
         this.plotManager = plotManager;
+        this.inventoryVaultManager = inventoryVaultManager;
     }
 
     /** Fuer alle online Spieler, z. B. direkt nach /bc start. */
@@ -64,7 +67,12 @@ public final class EntryTeleportManager {
         }
 
         gameStateManager.markInitialTeleportDone(player.getUniqueId());
+        // Jeder beginnt mit leerem Inventar, das mitgebrachte wird gesichert
+        // und beim Verlassen des Contests wiederhergestellt (siehe
+        // InventoryVaultManager, rules.md#welten-und-fortbewegung).
+        inventoryVaultManager.saveAndClear(player);
         player.teleport(destinationOpt.get());
+        player.setGameMode(GameMode.SURVIVAL);
         player.sendMessage("§aDu wurdest einmalig zu eurem Bauplatz teleportiert.");
     }
 

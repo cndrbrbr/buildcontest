@@ -10,6 +10,7 @@ import io.github.cndrbrbr.buildcontest.manager.AutomodeManager;
 import io.github.cndrbrbr.buildcontest.manager.EntryTeleportManager;
 import io.github.cndrbrbr.buildcontest.manager.GameStateManager;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
+import io.github.cndrbrbr.buildcontest.manager.InventoryVaultManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
@@ -31,6 +32,7 @@ public final class BuildContestPlugin extends JavaPlugin {
     private WorldManager worldManager;
     private AutomodeManager automodeManager;
     private EntryTeleportManager entryTeleportManager;
+    private InventoryVaultManager inventoryVaultManager;
     private DataStore dataStore;
     private BukkitTask autosaveTask;
 
@@ -50,8 +52,10 @@ public final class BuildContestPlugin extends JavaPlugin {
         worldManager.ensurePrimaryWorldSpawnOnGround();
         worldManager.ensureLoaded();
         dataStore = new DataStore(this, groupManager, plotManager, scoreManager, gameStateManager);
-        automodeManager = new AutomodeManager(this, mainConfig, groupManager);
-        entryTeleportManager = new EntryTeleportManager(gameStateManager, groupManager, plotManager);
+        automodeManager = new AutomodeManager(this, mainConfig, groupManager, gameStateManager);
+        inventoryVaultManager = new InventoryVaultManager();
+        entryTeleportManager = new EntryTeleportManager(gameStateManager, groupManager, plotManager,
+                inventoryVaultManager);
 
         if (dataStore.load()) {
             getLogger().info("Gespeicherter Spielstand aus data.yml geladen.");
@@ -69,8 +73,13 @@ public final class BuildContestPlugin extends JavaPlugin {
         BuildContestCommand command = new BuildContestCommand(
                 this, mainConfig, scoreConfig, groupManager, plotManager,
                 gameStateManager, scoreboardManager, scoreManager, worldManager, automodeManager,
-                entryTeleportManager, dataStore);
+                entryTeleportManager, dataStore, inventoryVaultManager);
         automodeManager.setCommand(command);
+        // Ein natuerlicher Timer-Ablauf muss denselben vollen Ende-Ablauf
+        // ausloesen wie /bc end (Endstand archivieren/bekanntgeben,
+        // Rueckteleport, Statusanzeige) - nicht nur die internen
+        // running/frozen-Flags umschalten (siehe GameStateManager#setOnTimerEnd).
+        gameStateManager.setOnTimerEnd(() -> command.handleEnd(getServer().getConsoleSender()));
         getCommand("bc").setExecutor(command);
         getCommand("bc").setTabCompleter(command);
 

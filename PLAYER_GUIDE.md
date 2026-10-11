@@ -23,14 +23,27 @@ automatisch zu einem sicheren Startpunkt bei eurem Bauplatz. Danach gibt es bewu
 weiteren Teleport-Befehle mehr – zu eurem Bauplatz (oder woanders hin) kommt ihr zu Fuß, per Boot,
 Pferd, Minecart usw., ganz normales Survival-Gameplay.
 
-**Im Automatikmodus** (Rot gegen Blau) läuft das anders: Ihr bekommt in der Eingangswelt einen
-roten und einen blauen Wolle-"Ball" ins Inventar. Benutzt den Ball eurer Wahl (Rechtsklick), um dem
-jeweiligen Team beizutreten (nur möglich, solange das Team noch nicht voll ist). Eine schwebende
-Tafel in der Eingangswelt zeigt live, wer schon in welchem Team ist. Sobald beide Teams voll sind,
-startet der Contest automatisch.
+**Im Automatikmodus** (Rot gegen Blau, Presets `2x2`/`2x4`) läuft das anders: Ihr bekommt in der
+Eingangswelt einen roten und einen blauen Wolle-"Ball" ins Inventar. Benutzt den Ball eurer Wahl
+(Rechtsklick), um dem jeweiligen Team beizutreten (nur möglich, solange das Team noch nicht voll
+ist). Eine schwebende Tafel zeigt live, wer schon in welchem Team ist. Sobald beide Teams voll
+sind, startet der Contest automatisch. Beim Preset `2x1` gibt es keine Ballwahl – die ersten zwei
+Beitretenden werden einfach zufällig Rot/Blau zugeteilt. Beim Preset `2xn` werden alle gerade
+anwesenden Spieler ohne Gruppe sofort zufällig in zwei Teams aufgeteilt, ohne Wartezeit.
 
-**Im Free-for-all-Automatikmodus** (`/bc automode 1x1`) bekommt jeder online Spieler sofort seine
-eigene Gruppe mit eigenem Bauplatz – ihr müsst nichts wählen, der Contest startet direkt.
+**Start-Steine:** Steht in der Eingangswelt ein beschrifteter Stein mit Schild (`2x1`/`2x2`/`2x4`/
+`2xn`), könnt ihr per Rechtsklick selbst einen Contest starten – auch wenn kein Admin da ist!
+Über einen Stein gestartete Contests laufen immer genau **30 Minuten**. Eine Statusanzeige neben
+den Steinen zeigt, ob gerade schon ein Contest läuft (dann warten, bis er vorbei ist).
+
+## Eingangswelt, Contest und Inventar
+
+- In der Eingangswelt könnt ihr nichts bauen oder abbauen (Adventure-Modus) – dort wartet ihr nur.
+- Sobald ihr in den Contest kommt, wechselt ihr automatisch in den **Überlebensmodus**.
+- Euer **mitgebrachtes Inventar wird beim Eintritt gesichert und geleert** – ihr startet also
+  immer mit leeren Taschen, fair für alle. Wenn ihr den Contest wieder verlasst (z. B. nach
+  `/bc end`), bekommt ihr dieses alte Inventar zurück – was ihr im Contest gesammelt/gebaut
+  getragen habt, bleibt dort zurück.
 
 ## Bauen
 

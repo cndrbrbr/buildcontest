@@ -128,35 +128,52 @@ rules.md#punktesystem). Eigene Werte setzen:
    automatisch direkt nach `/bc end` passiert. Spätestens der nächste `/bc start` ersetzt die Welt
    ohnehin komplett.
 
-## Automatikmodus (Rot gegen Blau, Free-for-all)
+## Automatikmodus und Start-Steine (siehe rules.md#schnellstart-presets-und-start-steine)
 
-Zusatzfunktion des Plugins, (noch) nicht Teil des verhandelten `rules.md`: Schnelle,
-selbsterklärende Events ohne manuelle Vorbereitung.
+Vier Presets für schnelle, selbsterklärende Events ohne manuelle Vorbereitung – **immer zwei
+Gruppen** (Rot und Blau):
 
-```
-/bc automode 2x2
-```
-oder
-```
-/bc automode 2x4
-```
-
-Setzt Gruppenanzahl (2), Gruppengröße (2 bzw. 4) und Bauplatzgröße (10×10 bzw. 20×20) automatisch,
-benennt die Gruppen **Rot** und **Blau** und aktiviert die Ball-basierte Team-Wahl: Spieler
-bekommen in der Eingangswelt einen roten und einen blauen Wolle-"Ball" ins Inventar und wählen per
-Rechtsklick ihr Team. Eine schwebende Tafel in der Eingangswelt zeigt live, wer in welcher Gruppe
-ist. Sobald beide Gruppen voll sind, startet der Contest automatisch – kein `/bc start` nötig.
+| Preset | Gruppengröße | Teamwahl |
+|---|---|---|
+| `2x1` | 1 | Keine Ballwahl – die ersten zwei Beitretenden werden zufällig Rot/Blau zugewiesen |
+| `2x2` | 2 | Rot/Blau-Ball, Spieler wählen per Rechtsklick selbst |
+| `2x4` | 4 | Rot/Blau-Ball, Spieler wählen per Rechtsklick selbst |
+| `2xn` | alle Anwesenden ohne Gruppe, halbiert | Keine Ballwahl – sofortige zufällige Zweiteilung, startet ohne Wartephase direkt |
 
 ```
-/bc automode 1x1
+/bc automode <2x1|2x2|2x4|2xn>
 ```
 
-Free-for-all-Variante: Jeder aktuell **online** Spieler bekommt sofort seine eigene 1-Spieler-
-Gruppe (benannt nach seinem Minecraft-Namen) mit eigenem 10×10-Bauplatz. Es gibt weder Ball-Wahl
-noch Wartephase – der Contest startet unmittelbar mit `/bc automode 1x1`. Ist aktuell niemand
-online, bricht der Befehl mit einer Fehlermeldung ab. Spieler, die **nach** der Aktivierung
-beitreten, bekommen keine eigene Gruppe mehr automatisch (alle Gruppen haben bereits ihre maximale
-Größe 1 erreicht) – dafür muss der Admin anschließend manuell `/bc setgroups` erhöhen und zuweisen.
+Per Admin-Befehl aktiviert, läuft der Contest mit der **konfigurierten** Spieldauer (Standard:
+unbegrenzt).
+
+### Start-Steine
+
+```
+/bc placestartstones
+```
+
+Stellt an der aktuellen Position des Admins für jedes Preset einen beschrifteten Stein (Stein-
+Block + Schild) sowie eine Statusanzeige auf. Ein Rechtsklick auf ein Schild löst dasselbe Preset
+aus wie der entsprechende `/bc automode`-Befehl – **damit kann auch ohne anwesenden Admin ein
+Contest beginnen**. Einziger Unterschied: über einen Stein gestartete Contests laufen immer genau
+**30 Minuten**, unabhängig von `game.duration-minutes`.
+
+Es läuft immer nur ein Contest/eine Teamwahl gleichzeitig – die Statusanzeige zeigt "Bereit" oder
+"Contest läuft"; währenddessen lösen die Steine keinen weiteren Contest aus. `/bc end` setzt die
+Anzeige zurück, auch bei natürlichem Zeitablauf (nicht nur bei explizitem `/bc end`).
+
+### Eingangswelt, Contest-Welt und Inventar
+
+- Die Eingangswelt läuft automatisch im **Adventure-Modus** (kein Bauen/Abbauen) – wird bei jedem
+  Join und bei Rückkehr aus dem Contest gesetzt.
+- Die Contest-Welt hat **Survival-Modus** für alle Teilnehmer und Schwierigkeitsgrad **Normal**
+  (wird bei jedem `/bc start` neu gesetzt).
+- Beim **erstmaligen Eintritt** in einen Contest wird das mitgebrachte Inventar gesichert und
+  geleert – jeder beginnt mit leerem Inventar. Bei **Rückkehr** in die Eingangswelt (z. B. nach
+  `/bc end`) wird das gesicherte Inventar wiederhergestellt; im Contest gesammelte Gegenstände
+  gehen dabei verloren (ersetzt, nicht zusammengeführt). Wie der Automode-Wartezustand wird dieser
+  Inventar-Tresor **nicht** über einen Serverneustart hinweg persistiert.
 
 ## Persistenz
 
@@ -194,7 +211,8 @@ spielentscheidenden Einstellungen lassen sich erst nach `/bc end` wieder ändern
 | `/bc start confirm` | Wie `/bc start`, aber mit ausdrücklicher Bestätigung, falls noch eine alte Bauplatz-Welt existiert und ersetzt werden soll |
 | `/bc end` | Contest beenden, Endstand bekanntgeben |
 | `/bc deleteworld` | Bauplatz-Welt löschen (siehe `game.auto-delete-world-on-end`) |
-| `/bc automode 2x2` / `/bc automode 2x4` | Schnellstart-Automatikmodus aktivieren (siehe oben) |
+| `/bc automode <2x1\|2x2\|2x4\|2xn>` | Schnellstart-Preset aktivieren (siehe oben, konfigurierte Spieldauer) |
+| `/bc placestartstones` | Beschriftete Start-Steine für alle Presets an der eigenen Position aufstellen |
 | `/bc reload` | `config.yml` und `scoreboard-config.yml` neu laden |
 
 Es gibt bewusst **keinen** Spieler-Teleportbefehl (kein `/bc tp` o. ä.) – siehe

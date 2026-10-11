@@ -3,6 +3,7 @@ package io.github.cndrbrbr.buildcontest.manager;
 import io.github.cndrbrbr.buildcontest.BuildContestPlugin;
 import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import org.bukkit.Bukkit;
+import org.bukkit.Difficulty;
 import org.bukkit.HeightMap;
 import org.bukkit.Location;
 import org.bukkit.World;
@@ -131,6 +132,10 @@ public final class WorldManager {
                 .type(WorldType.NORMAL)
                 .seed(seed)
                 .createWorld();
+        // Die Contest-Welt hat fuer alle Teilnehmer Schwierigkeitsgrad Normal
+        // (siehe rules.md#welten-und-fortbewegung), unabhaengig vom
+        // Server-Standard.
+        newWorld.setDifficulty(Difficulty.NORMAL);
 
         plugin.getLogger().info("Neue Bauplatz-Welt '" + worldName + "' mit Seed " + seed + " erzeugt.");
         return Optional.of(newWorld);

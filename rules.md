@@ -16,6 +16,9 @@ Es gibt **keine separate Farmwelt und keine separate Bauwelt**. Außerhalb der B
 - Bei Logout, Tod und Wiederanmeldung gelten grundsätzlich normale Minecraft-Mechaniken. Buildcontest darf dabei keine Abkürzung zum Bauplatz schaffen; insbesondere darf ein Wiedereinstieg nicht automatisch dorthin teleportieren.
 - Administratoren können unabhängig davon ihre üblichen Moderations-/Rettungswerkzeuge verwenden; dies ist keine Spielerfunktion des Wettbewerbs.
 - Auch während RUNNING dürfen Gruppen außerhalb der Grundstücke Wege, Brücken, Minen, Farmen und andere Survival-Bauten errichten. Dafür gibt es keine Contestpunkte.
+- Die Eingangswelt läuft **nicht im Überlebensmodus** (z. B. Adventure-Modus) - Spieler können dort nichts bauen oder abbauen. Der Admin gestaltet sie frei und beliebig ansprechend.
+- Die Contest-Welt hat für alle Teilnehmer den **Überlebensmodus** und den Schwierigkeitsgrad **Normal**.
+- Beim **erstmaligen Eintritt** in einen Contest wird das bisherige Inventar eines Spielers gesichert und dann geleert - jeder beginnt mit leerem Inventar. Beim **Verlassen** des Contests (Rückkehr in die Eingangswelt, z. B. nach `/bc end`) wird das gesicherte Inventar wiederhergestellt; während des Contests gesammelte oder getragene Gegenstände gehen dabei verloren.
 
 ## 3. Vorbereitung und Bauplätze
 
@@ -193,10 +196,32 @@ Contest-ID, Team-/Spieler-UUIDs, Plot-Koordinaten, Fundamentanker, einzelne wert
 | `/bc end` | Contest beenden |
 | `/bc results` | Gespeicherte Ergebnisse ansehen |
 | `/bc deleteworld` | Abgeschlossene Contest-Welt nach Bestätigung löschen |
+| `/bc automode <2x1\|2x2\|2x4\|2xn>` | Schnellstart-Preset aktivieren (siehe Abschnitt 14) |
+| `/bc placestartstones` | Beschriftete Start-Steine für alle Presets in der Eingangswelt aufstellen |
 | `/bc reload` | Zulässige Konfiguration neu laden |
 
 Alle Adminbefehle benötigen gesonderte Permissions. **Spieler-Teleportbefehle gehören bewusst nicht zum Contest.**
 
-## 14. Umsetzungshinweis
+## 14. Schnellstart-Presets und Start-Steine
+
+Für schnelle, selbsterklärende Events ohne manuelle Vorbereitung gibt es vier Presets. Sie setzen Gruppenanzahl (**immer 2: Rot und Blau**), Gruppengröße und Bauplatzgröße automatisch und werden per `/bc automode <preset>` (durch einen Admin) oder über die Start-Steine (siehe unten, durch beliebige Spieler ohne Admin) ausgelöst:
+
+| Preset | Gruppengröße | Teamwahl |
+|---|---|---|
+| `2x1` | 1 Spieler je Team | Keine Ballwahl - die ersten zwei Beitretenden werden zufällig Rot/Blau zugewiesen (bei nur einem Platz je Team lohnt sich keine Wahl) |
+| `2x2` | 2 Spieler je Team | Rot/Blau-Ball, Spieler wählen per Rechtsklick selbst |
+| `2x4` | 4 Spieler je Team | Rot/Blau-Ball, Spieler wählen per Rechtsklick selbst |
+| `2xn` | Alle aktuell Anwesenden ohne Gruppe, halbiert | Keine Ballwahl - sofortige zufällige Zweiteilung, startet ohne Wartephase direkt |
+
+### Start-Steine
+
+Damit ein Contest auch **ohne anwesenden Admin** beginnen kann, stellt der Admin in der Eingangswelt für jedes Preset einen beschrifteten Stein auf (`/bc placestartstones`). Ein Rechtsklick auf einen Stein löst dasselbe Preset aus wie der entsprechende `/bc automode`-Befehl, mit einem Unterschied bei der Spieldauer:
+
+- Über einen Start-Stein ausgelöste Contests laufen **immer genau 30 Minuten**, unabhängig von der konfigurierten Standard-Spieldauer.
+- Über `/bc automode` durch einen Admin ausgelöste Contests laufen weiterhin nach der konfigurierten Dauer (Standard: unbegrenzt) - der Admin steuert das Spiel über Befehle und entscheidet selbst über ein Zeitlimit.
+
+Es darf **immer nur ein Contest gleichzeitig laufen** (siehe Abschnitt 11). Solange ein Contest läuft oder eine Teamwahl im Gange ist, zeigt eine Anzeige in der Eingangswelt den aktuellen Status an; die Start-Steine lösen währenddessen keinen weiteren Contest aus.
+
+## 15. Umsetzungshinweis
 
 Dieses Dokument beschreibt die **vereinbarten Spielregeln und die gewünschte Zielimplementierung**. Noch nicht implementierte Funktionen müssen in der Entwicklung ergänzt und getestet werden. Besonders kritisch sind: Welt-Lebenszyklus ohne Datenverlust, indirekter Plot-Schutz, persistente Zustandsmaschine, korrektes Block-Tracking samt Verbindungsprüfung und die Leistungsfähigkeit der Punkteberechnung.
