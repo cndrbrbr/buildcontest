@@ -72,7 +72,7 @@
 - [ ] Gruppengrößen durchsetzen; Wechsel nach Start nur per Adminbefehl.
 - [ ] Bei Admin-Teamwechsel vorhandene Baubeiträge dem ursprünglichen Team zugeordnet lassen.
 - [ ] Freiwilligen Handel/Tausch zwischen Gruppen zulassen, ohne fremde Plot-Rechte zu vergeben.
-- [ ] Logout, Tod und Wiedereinstieg ohne automatische Rückteleportation testen.
+- [x] Logout, Tod und Wiedereinstieg ohne automatische Rückteleportation testen. (PlayerConnectionListener#onRespawn korrigiert den Bukkit-Fallback, der ohne Bett faelschlich in die Eingangswelt respawnen liess, auf den Weltspawn der Contest-Welt - kein individueller Shortcut zum eigenen Bauplatz; eigenes Bett wird weiterhin respektiert; live auf Spigot 26.3 verifiziert)
 
 ### 7. Scoreboard und persönliche Statistiken
 - [ ] Live-Sidebar mit Restzeit, Rangfolge aller Teams, eigenem Team und persönlichem Bau-Beitrag ergänzen.

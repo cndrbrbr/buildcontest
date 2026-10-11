@@ -45,6 +45,10 @@ den Steinen zeigt, ob gerade schon ein Contest läuft (dann warten, bis er vorbe
   immer mit leeren Taschen, fair für alle. Wenn ihr den Contest wieder verlasst (z. B. nach
   `/bc end`), bekommt ihr dieses alte Inventar zurück – was ihr im Contest gesammelt/gebaut
   getragen habt, bleibt dort zurück.
+- **Stirbt** ihr während des Contests, respawnt ihr normal (Minecraft-Standardverhalten) – euer
+  Inventar fällt zu Boden wie üblich, eure Gruppe/Punkte sind davon nicht betroffen. Ohne eigenes
+  Bett landet ihr am Weltspawn der Contest-Welt (nicht zurück in der Eingangswelt); schlaft ihr auf
+  eurem Bauplatz, respawnt ihr dort.
 
 ## Bauen
 

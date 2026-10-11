@@ -67,7 +67,8 @@ public final class BuildContestPlugin extends JavaPlugin {
         getServer().getPluginManager().registerEvents(
                 new ProtectionListener(plotManager, groupManager), this);
         getServer().getPluginManager().registerEvents(
-                new PlayerConnectionListener(mainConfig, groupManager, scoreboardManager, entryTeleportManager), this);
+                new PlayerConnectionListener(mainConfig, groupManager, scoreboardManager, entryTeleportManager,
+                        gameStateManager), this);
         getServer().getPluginManager().registerEvents(automodeManager, this);
 
         BuildContestCommand command = new BuildContestCommand(
