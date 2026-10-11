@@ -143,16 +143,33 @@ public final class ScoreManager {
      * haben (siehe Klassen-Javadoc).
      */
     public void registerBreak(Block block, Plot plot) {
-        BlockKey key = BlockKey.of(block);
+        invalidate(BlockKey.of(block), plot.getSurfaceY());
+    }
+
+    /**
+     * Entfernt einen getrackten Block, OHNE dass er tatsaechlich ueber ein
+     * BlockBreakEvent abgebaut wurde - fuer die Konsistenzpruefung nach
+     * einem Absturz/Neustart (siehe rules.md#persistenz-und-absturzsicherheit),
+     * wenn die tatsaechliche Welt nicht mehr mit dem gespeicherten Tracking
+     * uebereinstimmt (z. B. der letzte Autosave lag vor dem Absturz, der
+     * Block existiert in der - bereits von Minecraft selbst gespeicherten -
+     * Welt aber nicht mehr oder mit anderem Material). Wirkt sonst wie
+     * {@link #registerBreak}: zieht Punkte ab und prueft gezielt, ob Nachbarn
+     * dadurch die Verbindung verlieren.
+     *
+     * @return ob tatsaechlich ein getrackter Block an dieser Position vorlag.
+     */
+    public boolean invalidate(BlockKey key, int surfaceY) {
         TrackedBlock removed = trackedBlocks.remove(key);
         if (removed == null) {
-            return;
+            return false;
         }
         if (removed.connected() && removed.points() > 0) {
             groupScores.merge(removed.groupId(), -removed.points(), Integer::sum);
             personalScores.merge(removed.placer(), -removed.points(), Integer::sum);
         }
-        disconnectUnreachableNeighbors(key, removed.groupId(), plot.getSurfaceY());
+        disconnectUnreachableNeighbors(key, removed.groupId(), surfaceY);
+        return true;
     }
 
     /**

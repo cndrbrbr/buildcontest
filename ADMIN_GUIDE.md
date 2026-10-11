@@ -160,11 +160,25 @@ Größe 1 erreicht) – dafür muss der Admin anschließend manuell `/bc setgrou
 
 ## Persistenz
 
-Gruppenmitgliedschaft, Bauplätze, gewertete Blöcke und der Spielstatus werden zusätzlich zur
+Gruppenmitgliedschaft, Bauplätze, getrackte Blöcke und der Spielstatus werden zusätzlich zur
 Minecraft-Welt in `plugins/BuildContest/data.yml` gesichert – automatisch alle
 `game.autosave-minutes` sowie beim sauberen Server-Stopp. Ein Server-Neustart während eines
 laufenden Contests lädt diesen Stand beim Aktivieren automatisch wieder; ein noch laufender
 Timer wird dabei korrekt mit der verbleibenden Restzeit fortgesetzt.
+
+Beim Laden wird jeder getrackte Block gegen die tatsächliche Welt geprüft: stimmt das Material an
+der gespeicherten Position nicht mehr (z. B. weil der Block zwischen letztem Autosave und einem
+Absturz schon abgebaut wurde), wird der Eintrag samt eventuell abhängiger Verbindungen entfernt,
+statt für ein nicht mehr existierendes Bauwerk weiter Punkte zu vergeben.
+
+Der **Endstand** jedes beendeten Contests wird zusätzlich dauerhaft in
+`plugins/BuildContest/results.yml` archiviert – unabhängig von `data.yml` und unberührt von einem
+späteren `/bc start` (setzt die laufenden Scores zurück) oder `/bc deleteworld`.
+
+**Während ein Contest läuft**, lehnt das Plugin `/bc setgroups`, `/bc setgroupsize`,
+`/bc setplotsize`, `/bc setdistance`, `/bc setscore` und `/bc automode` ab – diese
+spielentscheidenden Einstellungen lassen sich erst nach `/bc end` wieder ändern.
+`/bc assign` bleibt bewusst jederzeit erlaubt (Admin-Teamwechsel sind explizit gestattet).
 
 ## Admin-Befehlsreferenz
 

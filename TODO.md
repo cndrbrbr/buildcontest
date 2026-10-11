@@ -44,13 +44,13 @@
 **Abnahme:** Haus mit 0-Punkte-Verbindungsblöcken funktioniert; Entfernen einer tragenden Verbindung reduziert Punkte und Wiederverbinden stellt sie genau einmal wieder her. ✅ Unit-getestet und live auf Spigot 26.3 verifiziert - siehe offene Punkte oben (Struktur-Trennung, Kolbenbewegung innerhalb des Bauplatzes, Materialtabellen-Audit) für den Rest von P0-3.
 
 ### 4. Persistenz und Absturzsicherheit
-- [ ] Persistente Speicherung (z. B. SQLite) für Contest-Status, Welt-ID, Grundstücke, Fundamente, UUIDs, Tracking, Teams, Punkte und Timer festlegen.
-- [ ] Datenänderungen zuverlässig schreiben; nach Crash/Neustart Inkonsistenzen zwischen Welt und Tracking erkennen und beheben.
-- [ ] Serverneustart mit RUNNING und PAUSED testen; kein neuer Seed, keine verlorenen Punkte und keine ungewollt weiterlaufende Zeit.
-- [ ] Änderungen an spielentscheidenden Einstellungen während RUNNING/PAUSED sperren.
-- [ ] Abschluss-Ergebnisse und Statistiken unabhängig von der später gelöschten Welt speichern.
+- [ ] Persistente Speicherung (z. B. SQLite) für Contest-Status, Welt-ID, Grundstücke, Fundamente, UUIDs, Tracking, Teams, Punkte und Timer festlegen. (bewusste Entscheidung: vorerst bei YAML/data.yml bleiben - deckt alle genannten Felder bereits ab; SQLite-Migration als eigene spaetere Aufgabe vorgemerkt)
+- [x] Datenänderungen zuverlässig schreiben; nach Crash/Neustart Inkonsistenzen zwischen Welt und Tracking erkennen und beheben. (DataStore#reconcileTrackedBlocksWithWorld: getrackte Bloecke werden beim Laden gegen die tatsaechliche Welt geprueft, Phantom-Eintraege via ScoreManager#invalidate entfernt; unit-getestet)
+- [ ] Serverneustart mit RUNNING und PAUSED testen; kein neuer Seed, keine verlorenen Punkte und keine ungewollt weiterlaufende Zeit. (RUNNING wiederholt live auf Spigot 26.3 bestaetigt - Welt/Scores/Timer ueberleben Neustart korrekt; PAUSED kann erst getestet werden, sobald die Zustandsmaschine aus P1-5 existiert)
+- [x] Änderungen an spielentscheidenden Einstellungen während RUNNING/PAUSED sperren. (BuildContestCommand#requireNotRunning fuer setgroups/setgroupsize/setplotsize/setdistance/setscore/automode; /bc assign bleibt bewusst erlaubt, siehe rules.md#gruppen-und-handel; live verifiziert)
+- [x] Abschluss-Ergebnisse und Statistiken unabhängig von der später gelöschten Welt speichern. (DataStore#appendResult schreibt den Endstand in eine eigene results.yml, unberuehrt von scoreManager.clear()/Weltloeschung; live verifiziert. Volle /bc results-Ausgabe ist P1-Scope)
 
-**Abnahme:** Nach Neustart stimmen Welt, Plots, Mitglieder, Blöcke, Team-/Einzelpunkte und Restzeit.
+**Abnahme:** Nach Neustart stimmen Welt, Plots, Mitglieder, Blöcke, Team-/Einzelpunkte und Restzeit. ✅ Fuer RUNNING live verifiziert; PAUSED folgt mit P1-5.
 
 ## P1 – Wichtige Spielfunktionen
 

@@ -69,7 +69,7 @@ public final class BuildContestPlugin extends JavaPlugin {
         BuildContestCommand command = new BuildContestCommand(
                 this, mainConfig, scoreConfig, groupManager, plotManager,
                 gameStateManager, scoreboardManager, scoreManager, worldManager, automodeManager,
-                entryTeleportManager);
+                entryTeleportManager, dataStore);
         automodeManager.setCommand(command);
         getCommand("bc").setExecutor(command);
         getCommand("bc").setTabCompleter(command);

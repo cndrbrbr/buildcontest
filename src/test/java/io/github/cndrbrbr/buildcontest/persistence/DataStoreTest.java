@@ -9,9 +9,11 @@ import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.model.Plot;
 import org.bukkit.Material;
+import org.bukkit.Server;
 import org.bukkit.World;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.logging.Logger;
@@ -100,6 +103,16 @@ class DataStoreTest {
         Block scoredBlock = fakeBlock(WORLD, 5, 65, 5, Material.DIAMOND_BLOCK);
         scoreManager.registerPlacement(scoredBlock, plotForGroup1, playerA);
 
+        // Fuer die Konsistenzpruefung beim Laden (siehe
+        // DataStore#reconcileTrackedBlocksWithWorld) muss plugin.getServer()
+        // dieselbe "tatsaechliche Welt" liefern, die dem getrackten Block
+        // entspricht - sonst wuerde der Block faelschlich als Phantom erkannt.
+        Server server = mock(Server.class);
+        lenient().when(plugin.getServer()).thenReturn(server);
+        World world = mock(World.class);
+        lenient().when(server.getWorld(WORLD)).thenReturn(world);
+        lenient().when(world.getBlockAt(5, 65, 5)).thenReturn(scoredBlock);
+
         GameStateManager gameStateManager = new GameStateManager(plugin, mainConfig);
         gameStateManager.start();
 
@@ -128,6 +141,72 @@ class DataStoreTest {
         assertEquals(25, freshScoreManager.getPersonalScore(playerA));
 
         assertTrue(freshGameStateManager.isRunning());
+    }
+
+    @Test
+    void loadRemovesTrackedBlocksThatNoLongerMatchTheRealWorld() {
+        UUID playerA = UUID.randomUUID();
+
+        GroupManager groupManager = new GroupManager(mainConfig);
+        groupManager.join(playerA, 1);
+
+        PlotManager plotManager = new PlotManager(plugin, mainConfig);
+        Plot plotForGroup1 = new Plot(1, WORLD, 0, 0, 59, 59, 64);
+        plotManager.importPlots(Map.of(1, plotForGroup1), groupManager);
+
+        ScoreManager scoreManager = new ScoreManager(scoreConfig, material -> material != Material.AIR);
+        when(scoreConfig.getScore(Material.DIAMOND_BLOCK)).thenReturn(25);
+        Block scoredBlock = fakeBlock(WORLD, 5, 65, 5, Material.DIAMOND_BLOCK);
+        scoreManager.registerPlacement(scoredBlock, plotForGroup1, playerA);
+
+        GameStateManager gameStateManager = new GameStateManager(plugin, mainConfig);
+        DataStore saved = new DataStore(plugin, groupManager, plotManager, scoreManager, gameStateManager);
+        saved.save();
+
+        // Simuliert: zwischen letztem Autosave und einem Absturz wurde der
+        // Block in der (von Minecraft selbst bereits gespeicherten) Welt
+        // abgebaut - an der Position steht jetzt AIR statt DIAMOND_BLOCK.
+        Server server = mock(Server.class);
+        lenient().when(plugin.getServer()).thenReturn(server);
+        World world = mock(World.class);
+        lenient().when(server.getWorld(WORLD)).thenReturn(world);
+        Block airAtSamePosition = fakeBlock(WORLD, 5, 65, 5, Material.AIR);
+        lenient().when(world.getBlockAt(5, 65, 5)).thenReturn(airAtSamePosition);
+
+        GroupManager freshGroupManager = new GroupManager(mainConfig);
+        PlotManager freshPlotManager = new PlotManager(plugin, mainConfig);
+        ScoreManager freshScoreManager = new ScoreManager(scoreConfig, material -> material != Material.AIR);
+        GameStateManager freshGameStateManager = new GameStateManager(plugin, mainConfig);
+        DataStore loaded = new DataStore(plugin, freshGroupManager, freshPlotManager, freshScoreManager, freshGameStateManager);
+
+        assertTrue(loaded.load());
+
+        assertEquals(0, freshScoreManager.getGroupScore(1));
+        assertEquals(0, freshScoreManager.getPersonalScore(playerA));
+    }
+
+    @Test
+    void appendResultSurvivesAClearedScoreManager() {
+        GroupManager groupManager = new GroupManager(mainConfig);
+        PlotManager plotManager = new PlotManager(plugin, mainConfig);
+        ScoreManager scoreManager = new ScoreManager(scoreConfig);
+        GameStateManager gameStateManager = new GameStateManager(plugin, mainConfig);
+        DataStore dataStore = new DataStore(plugin, groupManager, plotManager, scoreManager, gameStateManager);
+
+        dataStore.appendResult(List.of(new DataStore.ResultEntry(1, "Rot", 42)));
+
+        // Ein neuer Contest setzt die laufenden Scores zurueck - das Archiv
+        // (eigene Datei, siehe rules.md#persistenz-und-absturzsicherheit:
+        // "Nur Ergebnisse und Statistiken werden archiviert") darf davon
+        // nicht betroffen sein.
+        scoreManager.clear();
+        dataStore.appendResult(List.of(new DataStore.ResultEntry(1, "Blau", 7)));
+
+        File resultsFile = new File(dataFolder, "results.yml");
+        assertTrue(resultsFile.exists());
+        YamlConfiguration yaml = YamlConfiguration.loadConfiguration(resultsFile);
+        List<Map<?, ?>> contests = yaml.getMapList("contests");
+        assertEquals(2, contests.size());
     }
 
     @Test

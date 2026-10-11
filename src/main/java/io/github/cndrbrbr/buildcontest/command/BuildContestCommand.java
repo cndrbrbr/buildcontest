@@ -12,6 +12,7 @@ import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
 import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.model.Group;
+import io.github.cndrbrbr.buildcontest.persistence.DataStore;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Sound;
@@ -46,12 +47,14 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private final WorldManager worldManager;
     private final AutomodeManager automodeManager;
     private final EntryTeleportManager entryTeleportManager;
+    private final DataStore dataStore;
 
     public BuildContestCommand(BuildContestPlugin plugin, MainConfig mainConfig, ScoreConfig scoreConfig,
                                 GroupManager groupManager, PlotManager plotManager,
                                 GameStateManager gameStateManager, ScoreboardManager scoreboardManager,
                                 ScoreManager scoreManager, WorldManager worldManager,
-                                AutomodeManager automodeManager, EntryTeleportManager entryTeleportManager) {
+                                AutomodeManager automodeManager, EntryTeleportManager entryTeleportManager,
+                                DataStore dataStore) {
         this.plugin = plugin;
         this.mainConfig = mainConfig;
         this.scoreConfig = scoreConfig;
@@ -63,6 +66,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         this.worldManager = worldManager;
         this.automodeManager = automodeManager;
         this.entryTeleportManager = entryTeleportManager;
+        this.dataStore = dataStore;
     }
 
     @Override
@@ -75,17 +79,20 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         String sub = args[0].toLowerCase(Locale.ROOT);
         return switch (sub) {
             case "join" -> handleJoin(sender, args);
-            case "setgroups" -> requireAdmin(sender) && handleSetGroups(sender, args);
-            case "setgroupsize" -> requireAdmin(sender) && handleSetGroupSize(sender, args);
-            case "setplotsize" -> requireAdmin(sender) && handleSetPlotSize(sender, args);
-            case "setdistance" -> requireAdmin(sender) && handleSetDistance(sender, args);
-            case "setscore" -> requireAdmin(sender) && handleSetScore(sender, args);
+            case "setgroups" -> requireAdmin(sender) && requireNotRunning(sender) && handleSetGroups(sender, args);
+            case "setgroupsize" ->
+                    requireAdmin(sender) && requireNotRunning(sender) && handleSetGroupSize(sender, args);
+            case "setplotsize" ->
+                    requireAdmin(sender) && requireNotRunning(sender) && handleSetPlotSize(sender, args);
+            case "setdistance" ->
+                    requireAdmin(sender) && requireNotRunning(sender) && handleSetDistance(sender, args);
+            case "setscore" -> requireAdmin(sender) && requireNotRunning(sender) && handleSetScore(sender, args);
             case "assign" -> requireAdmin(sender) && handleAssign(sender, args);
             case "start" -> requireAdmin(sender)
                     && handleStart(sender, args.length > 1 && "confirm".equalsIgnoreCase(args[1]));
             case "end" -> requireAdmin(sender) && handleEnd(sender);
             case "deleteworld" -> requireAdmin(sender) && handleDeleteWorld(sender);
-            case "automode" -> requireAdmin(sender) && handleAutomode(sender, args);
+            case "automode" -> requireAdmin(sender) && requireNotRunning(sender) && handleAutomode(sender, args);
             case "reload" -> requireAdmin(sender) && handleReload(sender);
             default -> {
                 sender.sendMessage("§cUnbekannter Unterbefehl: " + sub);
@@ -99,6 +106,22 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             return true;
         }
         sender.sendMessage("§cDafür fehlt dir die Berechtigung.");
+        return false;
+    }
+
+    /**
+     * Sperrt spielentscheidende Einstellungen (Gruppenanzahl/-größe,
+     * Bauplatzgröße/-abstand, Punktwerte, Automatikmodus) waehrend ein
+     * Contest laeuft (siehe rules.md#punktesystem: "Änderungen an
+     * Punktwerten während RUNNING/PAUSED sind gesperrt" sowie TODO.md P0-4).
+     * {@code /bc assign} ist bewusst ausgenommen - Admin-Teamwechsel
+     * waehrend RUNNING sind explizit erlaubt (rules.md#gruppen-und-handel).
+     */
+    private boolean requireNotRunning(CommandSender sender) {
+        if (!gameStateManager.isRunning()) {
+            return true;
+        }
+        sender.sendMessage("§cDiese Einstellung kann nicht geändert werden, während ein Contest läuft.");
         return false;
     }
 
@@ -323,6 +346,14 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
                 .toList();
         ranking.forEach(group -> plugin.getServer().broadcastMessage(
                 group.getColor() + group.getName() + ": §e" + scoreManager.getGroupScore(group.getId()) + " Punkte"));
+
+        // Endstand dauerhaft archivieren, unabhaengig von einem spaeteren
+        // /bc start (setzt scoreManager zurueck) oder /bc deleteworld (siehe
+        // rules.md#persistenz-und-absturzsicherheit: "Nur Ergebnisse und
+        // Statistiken werden archiviert, kein Weltbackup").
+        dataStore.appendResult(ranking.stream()
+                .map(group -> new DataStore.ResultEntry(group.getId(), group.getName(), scoreManager.getGroupScore(group.getId())))
+                .toList());
 
         // Siegergruppe zusaetzlich feiern (siehe rules.md#scoreboard-anzeige),
         // nicht nur nuechtern in der Rangliste auffuehren.

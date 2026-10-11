@@ -8,11 +8,13 @@ import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.model.Plot;
 import io.github.cndrbrbr.buildcontest.util.BlockKey;
 import org.bukkit.Material;
+import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -37,6 +39,11 @@ import java.util.stream.Collectors;
 public final class DataStore {
 
     private static final String FILE_NAME = "data.yml";
+    private static final String RESULTS_FILE_NAME = "results.yml";
+
+    /** Ein Gruppen-Endstand fuer das Ergebnis-Archiv, siehe {@link #appendResult}. */
+    public record ResultEntry(int groupId, String groupName, int score) {
+    }
 
     private final BuildContestPlugin plugin;
     private final GroupManager groupManager;
@@ -91,6 +98,41 @@ public final class DataStore {
         }
     }
 
+    /**
+     * Haengt den Endstand eines abgeschlossenen Contests an eine eigene,
+     * dauerhafte Archivdatei ({@value #RESULTS_FILE_NAME}) an - unabhaengig
+     * von {@value #FILE_NAME}, damit ein spaeterer /bc start
+     * (scoreManager.clear()) oder das Loeschen der Bauplatz-Welt den
+     * historischen Endstand NICHT mit beseitigt (siehe
+     * rules.md#persistenz-und-absturzsicherheit: "Nur Ergebnisse und
+     * Statistiken werden archiviert, kein Weltbackup").
+     */
+    public void appendResult(List<ResultEntry> ranking) {
+        File file = new File(plugin.getDataFolder(), RESULTS_FILE_NAME);
+        YamlConfiguration yaml = file.exists() ? YamlConfiguration.loadConfiguration(file) : new YamlConfiguration();
+
+        List<Map<?, ?>> contests = new ArrayList<>(yaml.getMapList("contests"));
+        Map<String, Object> contestEntry = new LinkedHashMap<>();
+        contestEntry.put("ended-at", System.currentTimeMillis());
+        List<Map<String, Object>> groups = new ArrayList<>();
+        for (ResultEntry entry : ranking) {
+            Map<String, Object> groupEntry = new LinkedHashMap<>();
+            groupEntry.put("group-id", entry.groupId());
+            groupEntry.put("name", entry.groupName());
+            groupEntry.put("score", entry.score());
+            groups.add(groupEntry);
+        }
+        contestEntry.put("groups", groups);
+        contests.add(contestEntry);
+        yaml.set("contests", contests);
+
+        try {
+            yaml.save(file);
+        } catch (IOException exception) {
+            plugin.getLogger().log(Level.SEVERE, "Konnte Ergebnis-Archiv nicht speichern: " + file, exception);
+        }
+    }
+
     /** @return true, wenn eine gespeicherte Datei gefunden und geladen wurde. */
     public boolean load() {
         File file = new File(plugin.getDataFolder(), FILE_NAME);
@@ -116,7 +158,45 @@ public final class DataStore {
             parseTrackedBlockLine(line).ifPresent(scoreManager::importEntry);
         }
 
+        int corrected = reconcileTrackedBlocksWithWorld();
+        if (corrected > 0) {
+            plugin.getLogger().warning(corrected + " getrackte(r) Block(bloecke) stimmten nach dem Neustart "
+                    + "nicht mehr mit der tatsaechlichen Welt ueberein (z. B. durch einen Absturz vor dem letzten "
+                    + "Speichern bereits zerstoert/veraendert) und wurden aus der Wertung entfernt.");
+        }
+
         return true;
+    }
+
+    /**
+     * Konsistenzpruefung nach einem Neustart (siehe
+     * rules.md#persistenz-und-absturzsicherheit): die WELT selbst wird
+     * bereits von Minecraft gespeichert, kann zwischen dem letzten Autosave
+     * und einem Absturz aber weitergelaufen sein (Bloecke abgebaut/ersetzt),
+     * waehrend data.yml noch den aelteren Stand zeigt. Jeder getrackte Block,
+     * dessen tatsaechliches Material in der echten Welt nicht mehr passt,
+     * wird entfernt (inkl. gezielter Neuprüfung dadurch abhaengiger
+     * Nachbarn), statt fuer ein laengst veraendertes/nicht mehr existierendes
+     * Bauwerk weiter Punkte zu vergeben.
+     *
+     * @return Anzahl der dabei entfernten/korrigierten Bloecke.
+     */
+    private int reconcileTrackedBlocksWithWorld() {
+        int corrected = 0;
+        for (ScoreManager.Entry entry : new ArrayList<>(scoreManager.exportEntries())) {
+            World world = plugin.getServer().getWorld(entry.key().world());
+            Material actual = world == null
+                    ? null
+                    : world.getBlockAt(entry.key().x(), entry.key().y(), entry.key().z()).getType();
+            if (actual == entry.material()) {
+                continue;
+            }
+            int surfaceY = plotManager.getPlot(entry.groupId()).map(Plot::getSurfaceY).orElse(Integer.MIN_VALUE);
+            if (scoreManager.invalidate(entry.key(), surfaceY)) {
+                corrected++;
+            }
+        }
+        return corrected;
     }
 
     private Map<Integer, Set<UUID>> readMembership(YamlConfiguration yaml) {
