@@ -7,6 +7,7 @@ import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.model.Plot;
 import io.github.cndrbrbr.buildcontest.util.BlockKey;
+import org.bukkit.Material;
 import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.YamlConfiguration;
 
@@ -24,7 +25,7 @@ import java.util.stream.Collectors;
 
 /**
  * Speichert/laedt den kompletten Laufzeitzustand (Gruppenmitgliedschaft,
- * Bauplaetze, gewertete Bloecke, Spielstatus) in einer Datei im
+ * Bauplaetze, getrackte Bloecke inkl. Verbindungsstatus, Spielstatus) in einer Datei im
  * Plugin-Datenordner, damit ein Server-Neustart waehrend eines laufenden
  * Contests nicht den gesamten Fortschritt verwirft.
  *
@@ -75,11 +76,12 @@ public final class DataStore {
             yaml.set(path + "surface-y", plot.getSurfaceY());
         });
 
-        List<String> scoredBlockLines = scoreManager.exportEntries().stream()
+        List<String> trackedBlockLines = scoreManager.exportEntries().stream()
                 .map(entry -> entry.key().world() + "|" + entry.key().x() + "|" + entry.key().y() + "|"
-                        + entry.key().z() + "|" + entry.groupId() + "|" + entry.placer() + "|" + entry.points())
+                        + entry.key().z() + "|" + entry.groupId() + "|" + entry.placer() + "|"
+                        + entry.material().name() + "|" + entry.points() + "|" + entry.connected())
                 .toList();
-        yaml.set("scored-blocks", scoredBlockLines);
+        yaml.set("tracked-blocks", trackedBlockLines);
 
         File file = new File(plugin.getDataFolder(), FILE_NAME);
         try {
@@ -110,8 +112,8 @@ public final class DataStore {
         groupManager.importMembership(readMembership(yaml));
         plotManager.importPlots(readPlots(yaml), groupManager);
 
-        for (String line : yaml.getStringList("scored-blocks")) {
-            parseScoredBlockLine(line).ifPresent(scoreManager::importEntry);
+        for (String line : yaml.getStringList("tracked-blocks")) {
+            parseTrackedBlockLine(line).ifPresent(scoreManager::importEntry);
         }
 
         return true;
@@ -161,10 +163,10 @@ public final class DataStore {
         return plots;
     }
 
-    private Optional<ScoreManager.Entry> parseScoredBlockLine(String line) {
+    private Optional<ScoreManager.Entry> parseTrackedBlockLine(String line) {
         String[] parts = line.split("\\|", -1);
-        if (parts.length != 7) {
-            plugin.getLogger().warning("Ungueltige Zeile in data.yml (scored-blocks) ignoriert: " + line);
+        if (parts.length != 9) {
+            plugin.getLogger().warning("Ungueltige Zeile in data.yml (tracked-blocks) ignoriert: " + line);
             return Optional.empty();
         }
         try {
@@ -172,10 +174,12 @@ public final class DataStore {
                     Integer.parseInt(parts[1]), Integer.parseInt(parts[2]), Integer.parseInt(parts[3]));
             int groupId = Integer.parseInt(parts[4]);
             UUID placer = UUID.fromString(parts[5]);
-            int points = Integer.parseInt(parts[6]);
-            return Optional.of(new ScoreManager.Entry(key, groupId, placer, points));
+            Material material = Material.valueOf(parts[6]);
+            int points = Integer.parseInt(parts[7]);
+            boolean connected = Boolean.parseBoolean(parts[8]);
+            return Optional.of(new ScoreManager.Entry(key, groupId, placer, material, points, connected));
         } catch (RuntimeException exception) {
-            plugin.getLogger().warning("Ungueltige Zeile in data.yml (scored-blocks) ignoriert: " + line);
+            plugin.getLogger().warning("Ungueltige Zeile in data.yml (tracked-blocks) ignoriert: " + line);
             return Optional.empty();
         }
     }

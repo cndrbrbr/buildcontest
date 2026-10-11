@@ -40,9 +40,14 @@ eigene Gruppe mit eigenem Bauplatz – ihr müsst nichts wählen, der Contest st
 - Direkt neben eurem Bauplatz markiert ein leuchtender Beacon die Position – so findet ihr euren
   Bauplatz auch von weitem wieder.
 - Gewertet werden nur Blöcke, deren X/Z-Position innerhalb eurer Bauplatz-Grundfläche liegt.
-- Verbaute Blöcke müssen **zusammenhängend** sein und über andere gewertete Blöcke mit der
-  planierten Oberfläche verbunden sein. Schwebende/unverbundene Platzierungen werden abgelehnt.
-- Reine Deko (Glas, Blumen, Redstone-Komponenten, Container, …) dürft ihr frei platzieren, bringt
+- Verbaute Blöcke müssen **zusammenhängend** sein und über feste Blöcke (auch 0-Punkte-Blöcke wie
+  Glas zählen als Verbindung) mit der planierten Oberfläche verbunden sein. Eine schwebende
+  Platzierung wird **nicht** abgelehnt, zählt aber 0 Punkte, bis sie wieder verbunden ist –
+  verbindet ihr sie später (auch indirekt über einen Nachbarblock), bekommt ihr die Punkte ohne
+  erneutes Platzieren zurück.
+- Baut ihr einen **verbindenden** Block ab, verlieren dadurch abgeschnittene Blöcke ebenfalls ihre
+  Punkte, bis die Verbindung wiederhergestellt ist.
+- Reine Deko (Fackeln, Blumen, Redstone-Komponenten, Container, …) dürft ihr frei platzieren, bringt
   aber 0 Punkte.
 - Baut ihr einen gewerteten Block ab, verliert ihr seinen Punktwert wieder – auch wenn ein
   anderes Gruppenmitglied ihn gebaut hat.

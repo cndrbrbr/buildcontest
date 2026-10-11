@@ -49,13 +49,9 @@ public final class BlockListener implements Listener {
             return;
         }
 
-        if (!scoreManager.canPlace(block, plot)) {
-            event.setCancelled(true);
-            event.getPlayer().sendMessage(
-                    "§cDieser Block ist nicht mit deinem Bauplatz verbunden und wurde nicht platziert.");
-            return;
-        }
-
+        // Unverbundene Platzierungen werden NICHT abgelehnt - sie zaehlen
+        // lediglich 0 Punkte, bis eine Verbindung zum Fundament besteht
+        // (siehe ScoreManager, rules.md#bauregeln-und-verbindungsprüfung).
         scoreManager.registerPlacement(block, plot, event.getPlayer().getUniqueId());
         scoreboardManager.refreshAll();
     }

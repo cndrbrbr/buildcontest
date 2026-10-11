@@ -92,7 +92,10 @@ class DataStoreTest {
         Plot plotForGroup2 = new Plot(2, WORLD, 260, 0, 319, 59, 64);
         plotManager.importPlots(Map.of(1, plotForGroup1, 2, plotForGroup2), groupManager);
 
-        ScoreManager scoreManager = new ScoreManager(scoreConfig);
+        // Material#isSolid() braucht einen laufenden Bukkit-Server (siehe
+        // ScoreManager) - hier stattdessen ein Praedikat, das fuer die in
+        // diesem Test verwendeten Materialien dieselbe Antwort liefert.
+        ScoreManager scoreManager = new ScoreManager(scoreConfig, material -> material != Material.AIR);
         when(scoreConfig.getScore(Material.DIAMOND_BLOCK)).thenReturn(25);
         Block scoredBlock = fakeBlock(WORLD, 5, 65, 5, Material.DIAMOND_BLOCK);
         scoreManager.registerPlacement(scoredBlock, plotForGroup1, playerA);

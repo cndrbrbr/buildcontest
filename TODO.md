@@ -30,18 +30,18 @@
 **Abnahme:** Fremde Spieler können besichtigen, aber weder direkt noch indirekt Punkte, Gebäude oder Lagerbestände anderer Teams beschädigen.
 
 ### 3. Block-Tracking und Punkte
-- [ ] Block-Tracking und Score-Berechnung in getrennte Komponenten aufteilen.
-- [ ] Nur zulässige **Spielerplatzierungen** registrieren (Contest-ID, Koordinaten, Material, Spieler-UUID, Team, Zustand).
-- [ ] Vorhandene Naturblöcke, WorldEdit-/Command-/Plugin-Blöcke, automatisch erzeugte Blöcke und Enderman-Platzierungen von neuen Punkten ausschließen.
-- [ ] Auf Abbau, Ersetzung, Zerstörung, Blocktransformation und Kolbenbewegung korrekt reagieren; keine doppelten oder Phantom-Punkte zulassen.
-- [ ] **Wertbar** und **verbindend** getrennt behandeln; auch 0-Punkte-Blöcke dürfen verbinden.
-- [ ] Verbindung zum gespeicherten Fundament nur über sechs direkte Blockflächen prüfen, nicht diagonal und nicht über Außenbereiche.
-- [ ] Bei Verlust der Verbindung Punkte betroffener Komponenten abziehen und nach Wiederverbindung wiederherstellen.
-- [ ] Punktestand immer aus den aktuell gültigen, noch existierenden und verbundenen Blöcken ableiten (kein kumulatives Farmen durch Abbau/Neusetzen).
-- [ ] Punktwerte aus `scoreboard-config.yml` übernehmen; geänderte Beispielwerte, Ausnahmen und Materialvarianten prüfen.
-- [ ] Verbindungsprüfungen inkrementell/gezielt statt mit Vollscan bei jeder Platzierung umsetzen.
+- [ ] Block-Tracking und Score-Berechnung in getrennte Komponenten aufteilen. (bewusst noch nicht gemacht: ScoreManager vereint beides weiterhin in einer Klasse - funktional korrekt, aber nicht die in rules.md#manipulationssichere-blockerfassung verlangte strukturelle Trennung)
+- [x] Nur zulässige **Spielerplatzierungen** registrieren (Koordinaten, Material, Spieler-UUID, Team, Zustand). (ScoreManager-Umbau; "Contest-ID" gibt es noch nicht als eigenes Feld, da aktuell nur ein Contest gleichzeitig existiert)
+- [x] Vorhandene Naturblöcke, WorldEdit-/Command-/Plugin-Blöcke, automatisch erzeugte Blöcke und Enderman-Platzierungen von neuen Punkten ausschließen. (registerPlacement laeuft nur ueber echtes BlockPlaceEvent; Enderman-Platzierungen werden durch ProtectionListener#onEntityChangeBlock bereits verhindert)
+- [ ] Auf Abbau, Ersetzung, Zerstörung, Blocktransformation und Kolbenbewegung korrekt reagieren; keine doppelten oder Phantom-Punkte zulassen. (Abbau/Zerstoerung behandelt; **bekannte Luecke:** ein Kolben, der einen getrackten Block INNERHALB desselben Bauplatzes verschiebt, aktualisiert die Tracking-Position noch nicht - das Tracking bleibt an der alten Koordinate "haengen". Blocktransformation wie BlockFadeEvent/BlockFormEvent ebenfalls noch nicht abgeglichen)
+- [x] **Wertbar** und **verbindend** getrennt behandeln; auch 0-Punkte-Blöcke dürfen verbinden. (ScoreManager-Umbau, live verifiziert)
+- [x] Verbindung zum gespeicherten Fundament nur über sechs direkte Blockflächen prüfen, nicht diagonal und nicht über Außenbereiche. (NEIGHBOR_FACES + Gruppen-ID-Grenze)
+- [x] Bei Verlust der Verbindung Punkte betroffener Komponenten abziehen und nach Wiederverbindung wiederherstellen. (disconnect-/reconnect-BFS, unit-getestet)
+- [x] Punktestand immer aus den aktuell gültigen, noch existierenden und verbundenen Blöcken ableiten (kein kumulatives Farmen durch Abbau/Neusetzen). (inkrementelles Modell, kein Bestandsspeicher ausserhalb der getrackten Bloecke)
+- [ ] Punktwerte aus `scoreboard-config.yml` übernehmen; geänderte Beispielwerte, Ausnahmen und Materialvarianten prüfen. (unveraendert seit 831e4c1 - noch kein systematischer Audit der aktuellen Tabelle gegen 26.3-Materialien)
+- [x] Verbindungsprüfungen inkrementell/gezielt statt mit Vollscan bei jeder Platzierung umsetzen. (BFS nur ueber bereits getrackte Bloecke der betroffenen Teilstruktur, kein Bauplatz-Vollscan)
 
-**Abnahme:** Haus mit 0-Punkte-Verbindungsblöcken funktioniert; Entfernen einer tragenden Verbindung reduziert Punkte und Wiederverbinden stellt sie genau einmal wieder her.
+**Abnahme:** Haus mit 0-Punkte-Verbindungsblöcken funktioniert; Entfernen einer tragenden Verbindung reduziert Punkte und Wiederverbinden stellt sie genau einmal wieder her. ✅ Unit-getestet und live auf Spigot 26.3 verifiziert - siehe offene Punkte oben (Struktur-Trennung, Kolbenbewegung innerhalb des Bauplatzes, Materialtabellen-Audit) für den Rest von P0-3.
 
 ### 4. Persistenz und Absturzsicherheit
 - [ ] Persistente Speicherung (z. B. SQLite) für Contest-Status, Welt-ID, Grundstücke, Fundamente, UUIDs, Tracking, Teams, Punkte und Timer festlegen.
