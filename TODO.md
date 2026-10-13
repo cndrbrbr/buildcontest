@@ -22,7 +22,7 @@
 - [x] Bau-/Abbaurechte auf **eigene** Teammitglieder begrenzen; Besucher dürfen fremde Bauplätze betreten, aber nicht verändern. (bereits vorhanden)
 - [x] Fremde Container-, Inventar- und Entity-Zugriffe verhindern; Hopper/Hopper-Minecarts testen. (ProtectionListener-Erweiterung, InventoryOpenEvent/InventoryMoveItemEvent)
 - [x] Explosionen (inkl. TNT, Creeper, Wither und Betten), Feuer und Feuerausbreitung schützen. (bereits vorhanden)
-- [x] Wasser-/Lavafluss und Kolbenbewegungen über Grundstücksgrenzen absichern. (ProtectionListener-Erweiterung, BlockFromToEvent/BlockPistonExtend-/RetractEvent, live verifiziert)
+- [x] Wasser-/Lavafluss und Kolbenbewegungen über Grundstücksgrenzen absichern. (ProtectionListener-Erweiterung, BlockFromToEvent/BlockPistonExtend-/RetractEvent, live verifiziert; zusaetzlich duerfen Kolben keine BREAK-Bloecke wie Kuerbis/Melone jenseits einer Bauplatzgrenze zerstoeren - util.PistonBlocks, unit-getestet, noch nicht live verifiziert)
 - [x] Enderman-/Mob-Griefing, Blockphysik, Wachstum und sonstige indirekte Blockänderungen absichern. (ProtectionListener-Erweiterung, EntityChangeBlockEvent/BlockSpreadEvent)
 - [x] Eigene manuelle Bauaktionen erlauben, aber auch den eigenen Bauplatz vor unkontrollierten Schäden schützen. (alle neuen Handler wirken unabhängig von Gruppenzugehörigkeit)
 - [ ] Konflikte mit anderen Plugins und privilegierten Adminaktionen prüfen. (keine automatisierte Prüfung möglich - laufende Beobachtung im Betrieb nötig)
@@ -33,7 +33,7 @@
 - [ ] Block-Tracking und Score-Berechnung in getrennte Komponenten aufteilen. (bewusst noch nicht gemacht: ScoreManager vereint beides weiterhin in einer Klasse - funktional korrekt, aber nicht die in rules.md#manipulationssichere-blockerfassung verlangte strukturelle Trennung)
 - [x] Nur zulässige **Spielerplatzierungen** registrieren (Koordinaten, Material, Spieler-UUID, Team, Zustand). (ScoreManager-Umbau; "Contest-ID" gibt es noch nicht als eigenes Feld, da aktuell nur ein Contest gleichzeitig existiert)
 - [x] Vorhandene Naturblöcke, WorldEdit-/Command-/Plugin-Blöcke, automatisch erzeugte Blöcke und Enderman-Platzierungen von neuen Punkten ausschließen. (registerPlacement laeuft nur ueber echtes BlockPlaceEvent; Enderman-Platzierungen werden durch ProtectionListener#onEntityChangeBlock bereits verhindert)
-- [ ] Auf Abbau, Ersetzung, Zerstörung, Blocktransformation und Kolbenbewegung korrekt reagieren; keine doppelten oder Phantom-Punkte zulassen. (Abbau/Zerstoerung behandelt; **bekannte Luecke:** ein Kolben, der einen getrackten Block INNERHALB desselben Bauplatzes verschiebt, aktualisiert die Tracking-Position noch nicht - das Tracking bleibt an der alten Koordinate "haengen". Blocktransformation wie BlockFadeEvent/BlockFormEvent ebenfalls noch nicht abgeglichen)
+- [ ] Auf Abbau, Ersetzung, Zerstörung, Blocktransformation und Kolbenbewegung korrekt reagieren; keine doppelten oder Phantom-Punkte zulassen. (Abbau/Zerstoerung behandelt; Kolbenbewegung innerhalb eines Bauplatzes verschiebt das Tracking mit (ScoreManager#registerMove, BlockListener#onPistonExtend/-Retract, unit-getestet, noch nicht live verifiziert), von Kolben zerstoerte BREAK-Bloecke wie Kuerbis/Melone werden wie Abbau behandelt; **offen:** Blocktransformation wie BlockFadeEvent/BlockFormEvent noch nicht abgeglichen)
 - [x] **Wertbar** und **verbindend** getrennt behandeln; auch 0-Punkte-Blöcke dürfen verbinden. (ScoreManager-Umbau, live verifiziert)
 - [x] Verbindung zum gespeicherten Fundament nur über sechs direkte Blockflächen prüfen, nicht diagonal und nicht über Außenbereiche. (NEIGHBOR_FACES + Gruppen-ID-Grenze)
 - [x] Bei Verlust der Verbindung Punkte betroffener Komponenten abziehen und nach Wiederverbindung wiederherstellen. (disconnect-/reconnect-BFS, unit-getestet)
@@ -41,7 +41,7 @@
 - [ ] Punktwerte aus `scoreboard-config.yml` übernehmen; geänderte Beispielwerte, Ausnahmen und Materialvarianten prüfen. (unveraendert seit 831e4c1 - noch kein systematischer Audit der aktuellen Tabelle gegen 26.3-Materialien)
 - [x] Verbindungsprüfungen inkrementell/gezielt statt mit Vollscan bei jeder Platzierung umsetzen. (BFS nur ueber bereits getrackte Bloecke der betroffenen Teilstruktur, kein Bauplatz-Vollscan)
 
-**Abnahme:** Haus mit 0-Punkte-Verbindungsblöcken funktioniert; Entfernen einer tragenden Verbindung reduziert Punkte und Wiederverbinden stellt sie genau einmal wieder her. ✅ Unit-getestet und live auf Spigot 26.3 verifiziert - siehe offene Punkte oben (Struktur-Trennung, Kolbenbewegung innerhalb des Bauplatzes, Materialtabellen-Audit) für den Rest von P0-3.
+**Abnahme:** Haus mit 0-Punkte-Verbindungsblöcken funktioniert; Entfernen einer tragenden Verbindung reduziert Punkte und Wiederverbinden stellt sie genau einmal wieder her. ✅ Unit-getestet und live auf Spigot 26.3 verifiziert - siehe offene Punkte oben (Struktur-Trennung, Blocktransformation, Materialtabellen-Audit) für den Rest von P0-3.
 
 ### 4. Persistenz und Absturzsicherheit
 - [ ] Persistente Speicherung (z. B. SQLite) für Contest-Status, Welt-ID, Grundstücke, Fundamente, UUIDs, Tracking, Teams, Punkte und Timer festlegen. (bewusste Entscheidung: vorerst bei YAML/data.yml bleiben - deckt alle genannten Felder bereits ab; SQLite-Migration als eigene spaetere Aufgabe vorgemerkt)

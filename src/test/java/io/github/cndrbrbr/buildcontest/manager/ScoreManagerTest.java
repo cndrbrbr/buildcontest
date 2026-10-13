@@ -183,6 +183,90 @@ class ScoreManagerTest {
     }
 
     @Test
+    void pistonMoveKeepsPointsAndTracksTheNewPosition() {
+        UUID placer = UUID.randomUUID();
+        when(scoreConfig.getScore(Material.DIAMOND_BLOCK)).thenReturn(25);
+        Block diamond = fakeBlock(WORLD, 5, SURFACE_Y + 1, 5, Material.DIAMOND_BLOCK);
+        scoreManager.registerPlacement(diamond, plotA, placer);
+
+        // Seitlich auf dem Fundament verschoben -> bleibt verbunden, kein Doppel-/Phantompunkt.
+        scoreManager.registerMove(List.of(diamond), BlockFace.EAST, plotA);
+        assertEquals(25, scoreManager.getGroupScore(plotA.getGroupId()));
+
+        // Abbau an der ALTEN Position darf nichts mehr abziehen ...
+        scoreManager.registerBreak(diamond, plotA);
+        assertEquals(25, scoreManager.getGroupScore(plotA.getGroupId()));
+
+        // ... Abbau an der NEUEN Position schon.
+        scoreManager.registerBreak(fakeBlock(WORLD, 6, SURFACE_Y + 1, 5, Material.DIAMOND_BLOCK), plotA);
+        assertEquals(0, scoreManager.getGroupScore(plotA.getGroupId()));
+        assertEquals(0, scoreManager.getPersonalScore(placer));
+    }
+
+    @Test
+    void pistonMovingASupportingBlockAwayDisconnectsDependents() {
+        UUID placer = UUID.randomUUID();
+        when(scoreConfig.getScore(Material.STONE)).thenReturn(1);
+        when(scoreConfig.getScore(Material.DIAMOND_BLOCK)).thenReturn(25);
+        Block base = fakeBlock(WORLD, 5, SURFACE_Y + 1, 5, Material.STONE);
+        scoreManager.registerPlacement(base, plotA, placer);
+        Block diamond = fakeBlock(WORLD, 5, SURFACE_Y + 2, 5, Material.DIAMOND_BLOCK);
+        scoreManager.registerPlacement(diamond, plotA, placer);
+        assertEquals(26, scoreManager.getGroupScore(plotA.getGroupId()));
+
+        // Nur der Sockel wird weggeschoben, der Diamantblock schwebt danach.
+        scoreManager.registerMove(List.of(base), BlockFace.EAST, plotA);
+
+        assertEquals(1, scoreManager.getGroupScore(plotA.getGroupId()));
+    }
+
+    @Test
+    void pistonPushingAStackUpLiftsItOffTheFoundation() {
+        UUID placer = UUID.randomUUID();
+        when(scoreConfig.getScore(Material.STONE)).thenReturn(1);
+        Block lower = fakeBlock(WORLD, 5, SURFACE_Y + 1, 5, Material.STONE);
+        scoreManager.registerPlacement(lower, plotA, placer);
+        Block upper = fakeBlock(WORLD, 5, SURFACE_Y + 2, 5, Material.STONE);
+        scoreManager.registerPlacement(upper, plotA, placer);
+
+        // Beide Bloecke gemeinsam eine Ebene hoch - kein Kontakt mehr zum Fundament.
+        scoreManager.registerMove(List.of(lower, upper), BlockFace.UP, plotA);
+        assertEquals(0, scoreManager.getGroupScore(plotA.getGroupId()));
+
+        // Und wieder zurueck nach unten - beide Punkte genau einmal zurueck.
+        Block movedLower = fakeBlock(WORLD, 5, SURFACE_Y + 2, 5, Material.STONE);
+        Block movedUpper = fakeBlock(WORLD, 5, SURFACE_Y + 3, 5, Material.STONE);
+        scoreManager.registerMove(List.of(movedUpper, movedLower), BlockFace.DOWN, plotA);
+        assertEquals(2, scoreManager.getGroupScore(plotA.getGroupId()));
+        assertEquals(2, scoreManager.getPersonalScore(placer));
+    }
+
+    @Test
+    void pistonMoveCanReconnectAFloatingStructure() {
+        UUID placer = UUID.randomUUID();
+        when(scoreConfig.getScore(Material.STONE)).thenReturn(1);
+        when(scoreConfig.getScore(Material.DIAMOND_BLOCK)).thenReturn(25);
+        Block floating = fakeBlock(WORLD, 5, SURFACE_Y + 2, 5, Material.DIAMOND_BLOCK);
+        scoreManager.registerPlacement(floating, plotA, placer);
+        Block side = fakeBlock(WORLD, 4, SURFACE_Y + 1, 5, Material.STONE);
+        scoreManager.registerPlacement(side, plotA, placer);
+        assertEquals(1, scoreManager.getGroupScore(plotA.getGroupId()));
+
+        // Steinblock unter den schwebenden Diamantblock geschoben.
+        scoreManager.registerMove(List.of(side), BlockFace.EAST, plotA);
+
+        assertEquals(26, scoreManager.getGroupScore(plotA.getGroupId()));
+    }
+
+    @Test
+    void pistonMovingUntrackedBlocksChangesNothing() {
+        scoreManager.registerMove(List.of(fakeBlock(WORLD, 5, SURFACE_Y + 1, 5, Material.STONE)), BlockFace.EAST, plotA);
+
+        assertEquals(0, scoreManager.getGroupScore(plotA.getGroupId()));
+        assertEquals(0, scoreManager.exportEntries().size());
+    }
+
+    @Test
     void exportAndImportEntriesRoundTripsScoresAndConnectivity() {
         UUID placer = UUID.randomUUID();
         when(scoreConfig.getScore(Material.STONE)).thenReturn(1);

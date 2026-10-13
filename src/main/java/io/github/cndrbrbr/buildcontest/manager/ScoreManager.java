@@ -115,7 +115,7 @@ public final class ScoreManager {
 
         BlockKey key = BlockKey.of(block);
         int points = scoreConfig.getScore(type);
-        boolean connected = touchesFoundation(block.getY(), plot) || hasConnectedNeighbor(block, plot.getGroupId());
+        boolean connected = touchesFoundation(block.getY(), plot) || hasConnectedNeighbor(key, plot.getGroupId());
 
         trackedBlocks.put(key, new TrackedBlock(plot.getGroupId(), placerId, type, points, connected));
         if (connected && points > 0) {
@@ -127,15 +127,6 @@ public final class ScoreManager {
         }
     }
 
-    private boolean hasConnectedNeighbor(Block block, int groupId) {
-        for (BlockFace face : NEIGHBOR_FACES) {
-            if (isConnected(BlockKey.of(block.getRelative(face)), groupId)) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     /**
      * Baut ein Spieler einen getrackten Block ab, verliert dieser sofort
      * seinen Punktwert (falls verbunden). Zusaetzlich wird gezielt neu
@@ -144,6 +135,73 @@ public final class ScoreManager {
      */
     public void registerBreak(Block block, Plot plot) {
         invalidate(BlockKey.of(block), plot.getSurfaceY());
+    }
+
+    /**
+     * Verschiebt getrackte Bloecke per Kolben um ein Feld in {@code direction}
+     * (innerhalb desselben Bauplatzes - Bewegungen ueber Bauplatzgrenzen
+     * verhindert bereits ProtectionListener). Der Block bleibt derselbe:
+     * Platzierer, Material und eingefrorener Punktwert wandern mit, nur die
+     * Position und damit ggf. die Verbindung zum Fundament aendern sich.
+     *
+     * Ablauf: erst alle bewegten Bloecke an der alten Position entfernen (wie
+     * ein Abbau, inkl. gezielter Neupruefung der zurueckbleibenden Nachbarn),
+     * dann an der neuen Position unverbunden einsetzen und von dort aus wie bei
+     * einer Platzierung wieder anschliessen. Alles in einem Schritt, damit sich
+     * die bewegten Bloecke nicht gegenseitig ueberschreiben.
+     */
+    public void registerMove(List<Block> movedBlocks, BlockFace direction, Plot plot) {
+        Map<BlockKey, TrackedBlock> moved = new HashMap<>();
+        for (Block block : movedBlocks) {
+            BlockKey key = BlockKey.of(block);
+            TrackedBlock removed = trackedBlocks.remove(key);
+            if (removed == null) {
+                continue;
+            }
+            if (removed.connected() && removed.points() > 0) {
+                groupScores.merge(removed.groupId(), -removed.points(), Integer::sum);
+                personalScores.merge(removed.placer(), -removed.points(), Integer::sum);
+            }
+            moved.put(key, removed);
+        }
+        if (moved.isEmpty()) {
+            return;
+        }
+
+        moved.forEach((oldKey, block) -> disconnectUnreachableNeighbors(oldKey, block.groupId(), plot.getSurfaceY()));
+
+        List<BlockKey> newKeys = new ArrayList<>(moved.size());
+        moved.forEach((oldKey, block) -> {
+            BlockKey newKey = oldKey.relative(direction);
+            trackedBlocks.put(newKey, block.withConnected(false));
+            newKeys.add(newKey);
+        });
+
+        for (BlockKey newKey : newKeys) {
+            TrackedBlock block = trackedBlocks.get(newKey);
+            // Kann bereits durch das Wiederanschliessen eines anderen bewegten Blocks verbunden sein.
+            if (block.connected()) {
+                continue;
+            }
+            if (!touchesFoundation(newKey.y(), plot) && !hasConnectedNeighbor(newKey, block.groupId())) {
+                continue;
+            }
+            trackedBlocks.put(newKey, block.withConnected(true));
+            if (block.points() > 0) {
+                groupScores.merge(block.groupId(), block.points(), Integer::sum);
+                personalScores.merge(block.placer(), block.points(), Integer::sum);
+            }
+            reconnectDisconnectedNeighbors(newKey, block.groupId());
+        }
+    }
+
+    private boolean hasConnectedNeighbor(BlockKey key, int groupId) {
+        for (BlockFace face : NEIGHBOR_FACES) {
+            if (isConnected(key.relative(face), groupId)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     /**
