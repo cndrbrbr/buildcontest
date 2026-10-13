@@ -8,59 +8,60 @@ import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
-import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
-/** Prueft die Nachbildung der vom Kolben zerstoerten BREAK-Bloecke (z. B. Kuerbis). */
+/**
+ * Prueft die Aufteilung der Kolben-Event-Bloecke in verschobene und
+ * zerstoerte - sowohl mit der fehlerhaften Reaktions-Abbildung von Spigot
+ * 26.3 (zerstoert = BLOCK, push-only = BREAK) als auch mit einer korrekten.
+ */
 class PistonBlocksTest {
 
     private static Block block(PistonMoveReaction reaction) {
         Block block = mock(Block.class);
-        lenient().when(block.getPistonMoveReaction()).thenReturn(reaction);
+        when(block.getPistonMoveReaction()).thenReturn(reaction);
         return block;
     }
 
-    private static void inFrontOf(Block behind, Block front, BlockFace direction) {
-        lenient().when(behind.getRelative(direction)).thenReturn(front);
-    }
-
     @Test
-    void pistonHeadDestroysBreakBlockDirectlyInFront() {
-        Block piston = block(PistonMoveReaction.BLOCK);
-        Block pumpkin = block(PistonMoveReaction.BREAK);
-        inFrontOf(piston, pumpkin, BlockFace.EAST);
-
-        Map<Block, Block> destroyed = PistonBlocks.destroyed(new BlockPistonExtendEvent(piston, List.of(), BlockFace.EAST));
-
-        assertEquals(Map.of(pumpkin, piston), destroyed);
-    }
-
-    @Test
-    void pushedBlockDestroysBreakBlockAtTheFrontButNotMovableOnes() {
-        Block piston = block(PistonMoveReaction.BLOCK);
+    void spigot263MappingTreatsPushOnlyAsMovedAndPoppedAsDestroyed() {
+        Block piston = mock(Block.class);
         Block stone = block(PistonMoveReaction.MOVE);
-        Block melon = block(PistonMoveReaction.BREAK);
-        inFrontOf(piston, stone, BlockFace.UP);
-        inFrontOf(stone, melon, BlockFace.UP);
+        Block glazedTerracotta = block(PistonMoveReaction.BREAK);
+        Block pumpkin = block(PistonMoveReaction.BLOCK);
 
-        Map<Block, Block> destroyed = PistonBlocks.destroyed(new BlockPistonExtendEvent(piston, List.of(stone), BlockFace.UP));
+        PistonBlocks.Split split = PistonBlocks.split(
+                new BlockPistonExtendEvent(piston, List.of(stone, glazedTerracotta, pumpkin), BlockFace.EAST),
+                PistonMoveReaction.BLOCK);
 
-        // Der Stein wird verschoben, nicht zerstoert - nur die Melone davor bricht.
-        assertEquals(Map.of(melon, stone), destroyed);
+        assertEquals(List.of(stone, glazedTerracotta), split.moved());
+        assertEquals(List.of(pumpkin), split.destroyed());
     }
 
     @Test
-    void retractingPistonHeadDestroysNothing() {
-        Block piston = block(PistonMoveReaction.BLOCK);
-        Block behindPiston = block(PistonMoveReaction.BREAK);
-        inFrontOf(piston, behindPiston, BlockFace.WEST);
+    void correctMappingTreatsBreakAsDestroyed() {
+        Block piston = mock(Block.class);
+        Block stone = block(PistonMoveReaction.MOVE);
+        Block glazedTerracotta = block(PistonMoveReaction.PUSH_ONLY);
+        Block melon = block(PistonMoveReaction.BREAK);
 
-        Map<Block, Block> destroyed = PistonBlocks.destroyed(new BlockPistonRetractEvent(piston, List.of(), BlockFace.WEST));
+        PistonBlocks.Split split = PistonBlocks.split(
+                new BlockPistonExtendEvent(piston, List.of(stone, glazedTerracotta, melon), BlockFace.UP),
+                PistonMoveReaction.BREAK);
 
-        assertTrue(destroyed.isEmpty());
+        assertEquals(List.of(stone, glazedTerracotta), split.moved());
+        assertEquals(List.of(melon), split.destroyed());
+    }
+
+    @Test
+    void retractWithoutBlocksIsEmpty() {
+        PistonBlocks.Split split = PistonBlocks.split(
+                new BlockPistonRetractEvent(mock(Block.class), List.of(), BlockFace.WEST), PistonMoveReaction.BLOCK);
+
+        assertEquals(List.of(), split.moved());
+        assertEquals(List.of(), split.destroyed());
     }
 }
