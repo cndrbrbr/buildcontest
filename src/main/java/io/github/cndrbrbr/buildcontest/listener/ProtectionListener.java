@@ -30,7 +30,6 @@ import org.bukkit.inventory.Inventory;
 
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -167,14 +166,18 @@ public final class ProtectionListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPistonExtend(BlockPistonExtendEvent event) {
-        if (movesAcrossPlotBoundary(event.getBlocks(), event.getDirection()) || destroysAcrossPlotBoundary(event)) {
-            event.setCancelled(true);
-        }
+        cancelIfCrossingPlotBoundary(event);
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPistonRetract(BlockPistonRetractEvent event) {
-        if (movesAcrossPlotBoundary(event.getBlocks(), event.getDirection()) || destroysAcrossPlotBoundary(event)) {
+        cancelIfCrossingPlotBoundary(event);
+    }
+
+    private void cancelIfCrossingPlotBoundary(BlockPistonEvent event) {
+        PistonBlocks.Split split = PistonBlocks.split(event);
+        if (movesAcrossPlotBoundary(split.moved(), event.getDirection())
+                || destroysAcrossPlotBoundary(event.getBlock(), split.destroyed())) {
             event.setCancelled(true);
         }
     }
@@ -199,15 +202,17 @@ public final class ProtectionListener implements Listener {
     }
 
     /**
-     * Ein Kolben darf auch keinen BREAK-Block (Kuerbis, Melone, ...) jenseits
-     * einer Bauplatzgrenze zerstoeren - etwa ein Kolben direkt neben einem
-     * fremden Bauplatz, dessen Kopf in einen Kuerbis auf dem Grundstueck
-     * faehrt. Massgeblich ist, ob der hineingeschobene Block (bzw. der Kolben
-     * selbst) zum selben Bauplatz gehoert wie der zerstoerte Block.
+     * Ein Kolben darf auch keinen Block (Kuerbis, Melone, ...) auf einem
+     * Bauplatz zerstoeren, auf dem er nicht selbst steht - etwa ein Kolben
+     * direkt neben einem fremden Bauplatz, dessen Kopf in einen Kuerbis auf
+     * dem Grundstueck faehrt. Zerstoerte Bloecke ausserhalb von Bauplaetzen
+     * bleiben normales Survival.
      */
-    private boolean destroysAcrossPlotBoundary(BlockPistonEvent event) {
-        for (Map.Entry<Block, Block> entry : PistonBlocks.destroyed(event).entrySet()) {
-            if (!plotOf(entry.getKey()).equals(plotOf(entry.getValue()))) {
+    private boolean destroysAcrossPlotBoundary(Block piston, List<Block> destroyedBlocks) {
+        Optional<Plot> pistonPlot = plotOf(piston);
+        for (Block block : destroyedBlocks) {
+            Optional<Plot> plot = plotOf(block);
+            if (plot.isPresent() && !plot.equals(pistonPlot)) {
                 return true;
             }
         }

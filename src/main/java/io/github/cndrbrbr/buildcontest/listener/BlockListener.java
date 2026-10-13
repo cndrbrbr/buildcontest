@@ -19,7 +19,6 @@ import org.bukkit.event.block.BlockPlaceEvent;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Stream;
 
 /**
@@ -115,11 +114,12 @@ public final class BlockListener implements Listener {
      * schon mit LOWEST-Prioritaet). Ohne diesen Abgleich bliebe ein
      * verschobener Block an seiner alten Koordinate getrackt - Phantom-Punkte
      * dort, keine Punkte an der neuen Position. Vom Kolben zerstoerte Bloecke
-     * (siehe {@link PistonBlocks#destroyed}) werden wie ein Abbau behandelt.
+     * (siehe {@link PistonBlocks}) werden wie ein Abbau behandelt.
      */
     private void handlePistonMove(BlockPistonEvent event) {
-        List<Block> moved = PistonBlocks.moved(event);
-        Set<Block> destroyed = PistonBlocks.destroyed(event).keySet();
+        PistonBlocks.Split split = PistonBlocks.split(event);
+        List<Block> moved = split.moved();
+        List<Block> destroyed = split.destroyed();
 
         Optional<Plot> plotOpt = Stream.concat(moved.stream(), destroyed.stream())
                 .map(block -> plotManager.getPlotAt(block.getWorld().getName(), block.getX(), block.getZ()))
