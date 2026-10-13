@@ -4,6 +4,7 @@ import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.model.Group;
 import io.github.cndrbrbr.buildcontest.model.Plot;
+import io.github.cndrbrbr.buildcontest.util.PistonBlocks;
 import org.bukkit.Location;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -16,6 +17,7 @@ import org.bukkit.event.block.BlockBurnEvent;
 import org.bukkit.event.block.BlockExplodeEvent;
 import org.bukkit.event.block.BlockFromToEvent;
 import org.bukkit.event.block.BlockIgniteEvent;
+import org.bukkit.event.block.BlockPistonEvent;
 import org.bukkit.event.block.BlockPistonExtendEvent;
 import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
@@ -28,6 +30,7 @@ import org.bukkit.inventory.Inventory;
 
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 /**
@@ -164,14 +167,14 @@ public final class ProtectionListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPistonExtend(BlockPistonExtendEvent event) {
-        if (movesAcrossPlotBoundary(event.getBlocks(), event.getDirection())) {
+        if (movesAcrossPlotBoundary(event.getBlocks(), event.getDirection()) || destroysAcrossPlotBoundary(event)) {
             event.setCancelled(true);
         }
     }
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onPistonRetract(BlockPistonRetractEvent event) {
-        if (movesAcrossPlotBoundary(event.getBlocks(), event.getDirection())) {
+        if (movesAcrossPlotBoundary(event.getBlocks(), event.getDirection()) || destroysAcrossPlotBoundary(event)) {
             event.setCancelled(true);
         }
     }
@@ -189,6 +192,22 @@ public final class ProtectionListener implements Listener {
             Optional<Plot> before = plotOf(block);
             Optional<Plot> after = plotOf(block.getRelative(direction));
             if (!before.equals(after)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Ein Kolben darf auch keinen BREAK-Block (Kuerbis, Melone, ...) jenseits
+     * einer Bauplatzgrenze zerstoeren - etwa ein Kolben direkt neben einem
+     * fremden Bauplatz, dessen Kopf in einen Kuerbis auf dem Grundstueck
+     * faehrt. Massgeblich ist, ob der hineingeschobene Block (bzw. der Kolben
+     * selbst) zum selben Bauplatz gehoert wie der zerstoerte Block.
+     */
+    private boolean destroysAcrossPlotBoundary(BlockPistonEvent event) {
+        for (Map.Entry<Block, Block> entry : PistonBlocks.destroyed(event).entrySet()) {
+            if (!plotOf(entry.getKey()).equals(plotOf(entry.getValue()))) {
                 return true;
             }
         }

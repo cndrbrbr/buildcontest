@@ -6,14 +6,21 @@ import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
 import io.github.cndrbrbr.buildcontest.model.Plot;
+import io.github.cndrbrbr.buildcontest.util.PistonBlocks;
 import org.bukkit.block.Block;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+import org.bukkit.event.block.BlockPistonEvent;
+import org.bukkit.event.block.BlockPistonExtendEvent;
+import org.bukkit.event.block.BlockPistonRetractEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * Wertung und Zusammenhangspruefung gewerteter Bloecke (siehe rules.md#bauregeln,
@@ -89,6 +96,48 @@ public final class BlockListener implements Listener {
         }
 
         scoreManager.registerBreak(block, plot);
+        scoreboardManager.refreshAll();
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onPistonExtend(BlockPistonExtendEvent event) {
+        handlePistonMove(event);
+    }
+
+    @EventHandler(priority = EventPriority.NORMAL, ignoreCancelled = true)
+    public void onPistonRetract(BlockPistonRetractEvent event) {
+        handlePistonMove(event);
+    }
+
+    /**
+     * Haelt das Block-Tracking bei Kolbenbewegungen INNERHALB eines Bauplatzes
+     * aktuell (Bewegungen ueber Bauplatzgrenzen verhindert ProtectionListener
+     * schon mit LOWEST-Prioritaet). Ohne diesen Abgleich bliebe ein
+     * verschobener Block an seiner alten Koordinate getrackt - Phantom-Punkte
+     * dort, keine Punkte an der neuen Position. Vom Kolben zerstoerte Bloecke
+     * (siehe {@link PistonBlocks#destroyed}) werden wie ein Abbau behandelt.
+     */
+    private void handlePistonMove(BlockPistonEvent event) {
+        List<Block> moved = PistonBlocks.moved(event);
+        Set<Block> destroyed = PistonBlocks.destroyed(event).keySet();
+
+        Optional<Plot> plotOpt = Stream.concat(moved.stream(), destroyed.stream())
+                .map(block -> plotManager.getPlotAt(block.getWorld().getName(), block.getX(), block.getZ()))
+                .flatMap(Optional::stream)
+                .findFirst();
+        if (plotOpt.isEmpty()) {
+            return;
+        }
+        Plot plot = plotOpt.get();
+
+        // Wie bei Spieleraktionen: pausierte oder beendete Bauplaetze aendern sich auch per Redstone nicht.
+        if (gameStateManager.isPaused() || gameStateManager.isFrozen()) {
+            event.setCancelled(true);
+            return;
+        }
+
+        destroyed.forEach(block -> scoreManager.registerBreak(block, plot));
+        scoreManager.registerMove(moved, event.getDirection(), plot);
         scoreboardManager.refreshAll();
     }
 
