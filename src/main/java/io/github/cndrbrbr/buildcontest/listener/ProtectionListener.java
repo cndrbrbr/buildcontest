@@ -56,6 +56,13 @@ public final class ProtectionListener implements Listener {
 
     @EventHandler(priority = EventPriority.LOWEST)
     public void onBreak(BlockBreakEvent event) {
+        // Beacon-Markierung (Beacon + Eisenfundament) ist fuer alle tabu,
+        // auch fuer das eigene Team - sie ist Orientierung und Spawnpunkt.
+        if (plotManager.isBeaconMarker(event.getBlock())) {
+            event.setCancelled(true);
+            event.getPlayer().sendMessage("§cDer Beacon und sein Fundament können nicht abgebaut werden.");
+            return;
+        }
         if (!isForeignPlot(event.getBlock(), event.getPlayer())) {
             return;
         }
@@ -92,7 +99,7 @@ public final class ProtectionListener implements Listener {
         Iterator<Block> iterator = blocks.iterator();
         while (iterator.hasNext()) {
             Block block = iterator.next();
-            if (plotOf(block).isPresent()) {
+            if (plotOf(block).isPresent() || plotManager.isBeaconMarker(block)) {
                 iterator.remove();
             }
         }
@@ -176,7 +183,9 @@ public final class ProtectionListener implements Listener {
 
     private void cancelIfCrossingPlotBoundary(BlockPistonEvent event) {
         PistonBlocks.Split split = PistonBlocks.split(event);
-        if (movesAcrossPlotBoundary(split.moved(), event.getDirection())
+        if (split.moved().stream().anyMatch(plotManager::isBeaconMarker)
+                || split.destroyed().stream().anyMatch(plotManager::isBeaconMarker)
+                || movesAcrossPlotBoundary(split.moved(), event.getDirection())
                 || destroysAcrossPlotBoundary(event.getBlock(), split.destroyed())) {
             event.setCancelled(true);
         }
@@ -228,7 +237,7 @@ public final class ProtectionListener implements Listener {
      */
     @EventHandler(priority = EventPriority.LOWEST)
     public void onEntityChangeBlock(EntityChangeBlockEvent event) {
-        if (plotOf(event.getBlock()).isPresent()) {
+        if (plotOf(event.getBlock()).isPresent() || plotManager.isBeaconMarker(event.getBlock())) {
             event.setCancelled(true);
         }
     }

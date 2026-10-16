@@ -404,6 +404,34 @@ public final class PlotManager {
     }
 
     /**
+     * Gehoert der Block zu einer Beacon-Markierung (siehe
+     * {@link #placeBeaconMarker}) - der Beacon selbst oder ein Eisenblock des
+     * 3x3-Fundaments direkt darunter? Die Hoehe wird nicht gespeichert,
+     * sondern am Beacon in der Mittelspalte erkannt.
+     */
+    public boolean isBeaconMarker(Block block) {
+        for (Plot plot : plotsByGroup.values()) {
+            if (!plot.getWorldName().equals(block.getWorld().getName())) {
+                continue;
+            }
+            int centerX = (plot.getMinX() + plot.getMaxX()) / 2;
+            int baseZ = plot.getMaxZ() + BEACON_MARKER_OFFSET;
+            if (Math.abs(block.getX() - centerX) > 1 || Math.abs(block.getZ() - baseZ) > 1) {
+                continue;
+            }
+            Material type = block.getType();
+            if (type == Material.BEACON && block.getX() == centerX && block.getZ() == baseZ) {
+                return true;
+            }
+            if (type == BEACON_BASE_MATERIAL
+                    && block.getWorld().getBlockAt(centerX, block.getY() + 1, baseZ).getType() == Material.BEACON) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
      * Spawnpunkt eines Teams: auf dem Eisenfundament direkt oestlich neben
      * dem Beacon (siehe {@link #placeBeaconMarker}), also ausserhalb des
      * Bauplatzes und ohne den Beacon-Strahl zu verdecken. Die Hoehe wird
