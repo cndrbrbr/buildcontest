@@ -1,14 +1,13 @@
 package io.github.cndrbrbr.buildcontest.manager;
 
 import io.github.cndrbrbr.buildcontest.model.Group;
-import io.github.cndrbrbr.buildcontest.model.Plot;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
 import org.bukkit.Location;
-import org.bukkit.World;
 import org.bukkit.entity.Player;
 
 import java.util.Optional;
+import java.util.UUID;
 
 /**
  * Setzt rules.md#welten-und-fortbewegung um: "Beim ersten Eintritt in den
@@ -60,8 +59,7 @@ public final class EntryTeleportManager {
         if (groupOpt.isEmpty()) {
             return;
         }
-        Optional<Location> destinationOpt = plotManager.getPlot(groupOpt.get().getId())
-                .flatMap(this::plotCenterLocation);
+        Optional<Location> destinationOpt = teamSpawnLocation(player.getUniqueId());
         if (destinationOpt.isEmpty()) {
             return;
         }
@@ -75,16 +73,17 @@ public final class EntryTeleportManager {
         player.setGameMode(GameMode.SURVIVAL);
         // Fairer Start fuer alle - volle Gesundheit unabhaengig vom Zustand davor.
         player.setHealth(player.getMaxHealth());
-        player.sendMessage("§aDu wurdest einmalig zu eurem Bauplatz teleportiert.");
+        player.sendMessage("§aDu wurdest zum Beacon eures Bauplatzes teleportiert.");
     }
 
-    private Optional<Location> plotCenterLocation(Plot plot) {
-        World world = Bukkit.getWorld(plot.getWorldName());
-        if (world == null) {
-            return Optional.empty();
-        }
-        double centerX = (plot.getMinX() + plot.getMaxX()) / 2.0 + 0.5;
-        double centerZ = (plot.getMinZ() + plot.getMaxZ()) / 2.0 + 0.5;
-        return Optional.of(new Location(world, centerX, plot.getSurfaceY() + 1, centerZ));
+    /**
+     * Spawnpunkt am Beacon des eigenen Teams (siehe
+     * PlotManager#beaconSpawnLocation) - fuer den Start-Teleport und fuer den
+     * Respawn ohne Bett (PlayerConnectionListener#onRespawn).
+     */
+    public Optional<Location> teamSpawnLocation(UUID playerId) {
+        return groupManager.getGroupOf(playerId)
+                .flatMap(group -> plotManager.getPlot(group.getId()))
+                .flatMap(plotManager::beaconSpawnLocation);
     }
 }

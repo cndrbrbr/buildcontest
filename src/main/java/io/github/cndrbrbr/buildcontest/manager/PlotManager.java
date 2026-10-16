@@ -6,6 +6,7 @@ import io.github.cndrbrbr.buildcontest.model.Group;
 import io.github.cndrbrbr.buildcontest.model.Plot;
 import org.bukkit.Bukkit;
 import org.bukkit.HeightMap;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.block.Block;
@@ -400,6 +401,25 @@ public final class PlotManager {
             }
         }
         world.getBlockAt(centerX, groundY + 1, baseZ).setType(Material.BEACON, false);
+    }
+
+    /**
+     * Spawnpunkt eines Teams: auf dem Eisenfundament direkt oestlich neben
+     * dem Beacon (siehe {@link #placeBeaconMarker}), also ausserhalb des
+     * Bauplatzes und ohne den Beacon-Strahl zu verdecken. Die Hoehe wird
+     * jedes Mal aus der Welt gelesen, da das Gelaende an der Markierung von
+     * surfaceY abweicht und Spieler dort inzwischen gebaut haben koennen.
+     */
+    public Optional<Location> beaconSpawnLocation(Plot plot) {
+        World world = Bukkit.getWorld(plot.getWorldName());
+        if (world == null) {
+            return Optional.empty();
+        }
+        int x = (plot.getMinX() + plot.getMaxX()) / 2 + 1;
+        int z = plot.getMaxZ() + BEACON_MARKER_OFFSET;
+        int y = world.getHighestBlockYAt(x, z, HeightMap.MOTION_BLOCKING_NO_LEAVES) + 1;
+        // Blickrichtung Norden (yaw 180) - zum eigenen Bauplatz hin.
+        return Optional.of(new Location(world, x + 0.5, y, z + 0.5, 180f, 0f));
     }
 
     /** Fuer die Persistenz (siehe persistence.DataStore): aktueller Stand ohne erneutes Planieren. */

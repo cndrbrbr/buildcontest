@@ -7,6 +7,7 @@ import io.github.cndrbrbr.buildcontest.manager.GroupManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
 import org.bukkit.Bukkit;
 import org.bukkit.GameMode;
+import org.bukkit.Location;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -14,6 +15,8 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
+
+import java.util.Optional;
 
 /** Scoreboard-Setup und Configfile-Zuweisung beim Beitreten (siehe rules.md#gruppen). */
 public final class PlayerConnectionListener implements Listener {
@@ -72,24 +75,27 @@ public final class PlayerConnectionListener implements Listener {
      * zusaetzlichen (nicht-primaeren) Welt wie der Contest-Welt auf den
      * Weltspawn der SERVER-Hauptwelt zurueck, statt in der Welt zu bleiben,
      * in der der Spieler gestorben ist - das reisst ihn ungewollt aus dem
-     * laufenden Contest heraus. Korrigiert das auf den Weltspawn der
-     * Contest-Welt (siehe PlotManager#generatePlots: liegt auf dem ersten
-     * Bauplatz), OHNE einen individuellen Shortcut zum eigenen Bauplatz zu
-     * schaffen - das bleibt laut rules.md#welten-und-fortbewegung bewusst
-     * verboten ("ein Wiedereinstieg darf nicht automatisch dorthin
-     * teleportieren"). Ein eigenes Bett auf dem Bauplatz wird weiterhin ganz
-     * normal respektiert.
+     * laufenden Contest heraus. Teammitglieder respawnen deshalb am Beacon
+     * ihres eigenen Bauplatzes (siehe PlotManager#beaconSpawnLocation,
+     * rules.md#welten-und-fortbewegung); nur falls der nicht ermittelbar ist,
+     * am Weltspawn der Contest-Welt. Ein eigenes Bett/Anker wird weiterhin
+     * ganz normal respektiert.
      */
     @EventHandler
     public void onRespawn(PlayerRespawnEvent event) {
         if (event.isBedSpawn() || event.isAnchorSpawn() || !gameStateManager.isRunning()) {
             return;
         }
-        World contestWorld = Bukkit.getWorld(mainConfig.getWorldName());
-        if (contestWorld == null || contestWorld.equals(event.getRespawnLocation().getWorld())) {
+        if (groupManager.getGroupOf(event.getPlayer().getUniqueId()).isEmpty()) {
             return;
         }
-        if (groupManager.getGroupOf(event.getPlayer().getUniqueId()).isEmpty()) {
+        Optional<Location> teamSpawn = entryTeleportManager.teamSpawnLocation(event.getPlayer().getUniqueId());
+        if (teamSpawn.isPresent()) {
+            event.setRespawnLocation(teamSpawn.get());
+            return;
+        }
+        World contestWorld = Bukkit.getWorld(mainConfig.getWorldName());
+        if (contestWorld == null || contestWorld.equals(event.getRespawnLocation().getWorld())) {
             return;
         }
         event.setRespawnLocation(contestWorld.getSpawnLocation());
