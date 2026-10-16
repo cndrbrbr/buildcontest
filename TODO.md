@@ -39,6 +39,7 @@
 - [x] Bei Verlust der Verbindung Punkte betroffener Komponenten abziehen und nach Wiederverbindung wiederherstellen. (disconnect-/reconnect-BFS, unit-getestet)
 - [x] Punktestand immer aus den aktuell gültigen, noch existierenden und verbundenen Blöcken ableiten (kein kumulatives Farmen durch Abbau/Neusetzen). (inkrementelles Modell, kein Bestandsspeicher ausserhalb der getrackten Bloecke)
 - [ ] Punktwerte aus `scoreboard-config.yml` übernehmen; geänderte Beispielwerte, Ausnahmen und Materialvarianten prüfen. (unveraendert seit 831e4c1 - noch kein systematischer Audit der aktuellen Tabelle gegen 26.3-Materialien)
+- [ ] Hunger-Strafe: Bei jedem Tod durch Verhungern (DamageCause.STARVATION) werden dem Team 5 Blöcke abgezogen. Offen: echte Blöcke vom Bauplatz entfernen (welche?) oder 5 Punkte vom Team-/persönlichen Score abziehen; Invariante "Summe persönlicher Baupunkte = Team-Score" (P1-7) beachten. (Wunsch aus dem Live-Betrieb auf mc2 am 2026-10-16)
 - [x] Verbindungsprüfungen inkrementell/gezielt statt mit Vollscan bei jeder Platzierung umsetzen. (BFS nur ueber bereits getrackte Bloecke der betroffenen Teilstruktur, kein Bauplatz-Vollscan)
 
 **Abnahme:** Haus mit 0-Punkte-Verbindungsblöcken funktioniert; Entfernen einer tragenden Verbindung reduziert Punkte und Wiederverbinden stellt sie genau einmal wieder her. ✅ Unit-getestet und live auf Spigot 26.3 verifiziert - siehe offene Punkte oben (Struktur-Trennung, Blocktransformation, Materialtabellen-Audit) für den Rest von P0-3.
