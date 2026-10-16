@@ -111,8 +111,9 @@ rules.md#punktesystem). Eigene Werte setzen:
    (zu Fuß, Boot, Pferd, Minecart, Nether …) ist Teil des Spiels.
 
    Direkt außerhalb jeder Bauplatz-Südkante steht automatisch ein aktiver Beacon auf einer kleinen
-   Eisenblock-Pyramide – rein visuelle Orientierungshilfe, zählt nicht zur Wertung (liegt außerhalb
-   der Bauplatzgrenzen).
+   Eisenblock-Pyramide – auf derselben Höhe wie der Bauplatz, mit einer bis zum Himmel freigeräumten
+   Schneise zum Bauplatz (nie im Berg). Er ist Orientierungshilfe und Spawnpunkt des Teams, kann von
+   niemandem abgebaut werden und zählt nicht zur Wertung (liegt außerhalb der Bauplatzgrenzen).
 4. **Laufenlassen**: Scoreboard, Schutzmechanismen und Punktewertung laufen automatisch (siehe
    rules.md#bauregeln, #schutzmechanismen, #scoreboard-anzeige).
 

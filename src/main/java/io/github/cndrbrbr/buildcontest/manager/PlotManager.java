@@ -60,8 +60,8 @@ public final class PlotManager {
     private static final int MAX_FILL_SAFETY_DEPTH = 40;
     /** Abstand der Beacon-Markierung von der Bauplatzkante, siehe {@link #placeBeaconMarker}. */
     private static final int BEACON_MARKER_OFFSET = 3;
-    /** Wie viele Bloecke oberhalb der Markierung freigeraeumt werden, damit der Beacon-Strahl sichtbar ist. */
-    private static final int BEACON_CLEAR_HEIGHT = 6;
+    /** Halbe Breite des freigeraeumten Streifens um die Markierung (5 breit = 3x3-Fundament plus Rand). */
+    private static final int BEACON_CLEAR_RADIUS = 2;
     private static final Material BEACON_BASE_MATERIAL = Material.IRON_BLOCK;
     /** Deckschicht eines Bauplatzes, siehe {@link #flatten} - gut sichtbar/abgegrenzt vom natuerlichen Gelaende. */
     private static final Material PLOT_SURFACE_MATERIAL = Material.ORANGE_WOOL;
@@ -349,29 +349,37 @@ public final class PlotManager {
      * schwebende Plattform mit Hohlraum darunter zu hinterlassen.
      */
     private void flatten(Plot plot, World world) {
-        int surfaceY = plot.getSurfaceY();
+        for (int x = plot.getMinX(); x <= plot.getMaxX(); x++) {
+            for (int z = plot.getMinZ(); z <= plot.getMaxZ(); z++) {
+                levelColumn(world, x, z, plot.getSurfaceY(), PLOT_SURFACE_MATERIAL);
+            }
+        }
+    }
+
+    /**
+     * Raeumt eine Spalte oberhalb von surfaceY bis weit nach oben frei und
+     * fuellt darunter bis auf festen Boden auf (Hoehlen werden bis
+     * {@link #MAX_FILL_SAFETY_DEPTH} geschlossen).
+     */
+    private void levelColumn(World world, int x, int z, int surfaceY, Material surfaceMaterial) {
         int clearUpTo = Math.min(world.getMaxHeight() - 1, surfaceY + 150);
         int minFillDownTo = Math.max(world.getMinHeight(), surfaceY - 4);
         int safetyBottom = Math.max(world.getMinHeight(), surfaceY - MAX_FILL_SAFETY_DEPTH);
 
-        for (int x = plot.getMinX(); x <= plot.getMaxX(); x++) {
-            for (int z = plot.getMinZ(); z <= plot.getMaxZ(); z++) {
-                for (int y = clearUpTo; y > surfaceY; y--) {
-                    Block block = world.getBlockAt(x, y, z);
-                    if (block.getType() != Material.AIR) {
-                        block.setType(Material.AIR, false);
-                    }
-                }
-
-                int fillDownTo = minFillDownTo;
-                while (fillDownTo > safetyBottom && !world.getBlockAt(x, fillDownTo, z).getType().isSolid()) {
-                    fillDownTo--;
-                }
-                for (int y = surfaceY; y > fillDownTo; y--) {
-                    Block block = world.getBlockAt(x, y, z);
-                    block.setType(y == surfaceY ? PLOT_SURFACE_MATERIAL : Material.DIRT, false);
-                }
+        for (int y = clearUpTo; y > surfaceY; y--) {
+            Block block = world.getBlockAt(x, y, z);
+            if (block.getType() != Material.AIR) {
+                block.setType(Material.AIR, false);
             }
+        }
+
+        int fillDownTo = minFillDownTo;
+        while (fillDownTo > safetyBottom && !world.getBlockAt(x, fillDownTo, z).getType().isSolid()) {
+            fillDownTo--;
+        }
+        for (int y = surfaceY; y > fillDownTo; y--) {
+            Block block = world.getBlockAt(x, y, z);
+            block.setType(y == surfaceY ? surfaceMaterial : Material.DIRT, false);
         }
     }
 
@@ -380,24 +388,25 @@ public final class PlotManager {
      * Beacon auf eine kleine 3x3-Eisenblock-Pyramide, damit der Bauplatz
      * schon von weitem am Lichtstrahl erkennbar ist. Die Markierung steht
      * bewusst AUSSERHALB der Bauplatzgrenzen (siehe Plot#containsColumn) und
-     * zaehlt deshalb nicht zur Wertung. Nutzt die tatsaechliche lokale
-     * Gelaendehoehe an der Markierungsposition (nicht den surfaceY des
-     * Bauplatzes selbst), da das Gelaende direkt dahinter von der Bauplatz-
-     * Planierung unberuehrt bleibt und abweichend hoch/tief liegen kann.
+     * zaehlt deshalb nicht zur Wertung. Steht immer auf der Hoehe des
+     * Bauplatzes (surfaceY) - ein Streifen von der Bauplatzkante bis hinter
+     * die Markierung wird wie der Bauplatz selbst bis zum Himmel freigeraeumt
+     * und unterfuellt, damit der Beacon nie in einem Berg steckt, sein Strahl
+     * frei ist und er vom Bauplatz aus ebenerdig erreichbar ist.
      */
     private void placeBeaconMarker(World world, Plot plot) {
         int centerX = (plot.getMinX() + plot.getMaxX()) / 2;
         int baseZ = plot.getMaxZ() + BEACON_MARKER_OFFSET;
-        int groundY = world.getHighestBlockYAt(centerX, baseZ, HeightMap.MOTION_BLOCKING_NO_LEAVES);
+        int groundY = plot.getSurfaceY();
 
+        for (int x = centerX - BEACON_CLEAR_RADIUS; x <= centerX + BEACON_CLEAR_RADIUS; x++) {
+            for (int z = plot.getMaxZ() + 1; z <= baseZ + BEACON_CLEAR_RADIUS; z++) {
+                levelColumn(world, x, z, groundY, Material.GRASS_BLOCK);
+            }
+        }
         for (int dx = -1; dx <= 1; dx++) {
             for (int dz = -1; dz <= 1; dz++) {
-                int x = centerX + dx;
-                int z = baseZ + dz;
-                world.getBlockAt(x, groundY, z).setType(BEACON_BASE_MATERIAL, false);
-                for (int y = groundY + 1; y <= groundY + BEACON_CLEAR_HEIGHT; y++) {
-                    world.getBlockAt(x, y, z).setType(Material.AIR, false);
-                }
+                world.getBlockAt(centerX + dx, groundY, baseZ + dz).setType(BEACON_BASE_MATERIAL, false);
             }
         }
         world.getBlockAt(centerX, groundY + 1, baseZ).setType(Material.BEACON, false);
