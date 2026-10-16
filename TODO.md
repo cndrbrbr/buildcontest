@@ -73,6 +73,7 @@
 - [ ] Bei Admin-Teamwechsel vorhandene Baubeiträge dem ursprünglichen Team zugeordnet lassen.
 - [ ] Freiwilligen Handel/Tausch zwischen Gruppen zulassen, ohne fremde Plot-Rechte zu vergeben.
 - [x] Logout, Tod und Wiedereinstieg ohne automatische Rückteleportation testen. (PlayerConnectionListener#onRespawn korrigiert den Bukkit-Fallback, der ohne Bett faelschlich in die Eingangswelt respawnen liess, auf den Weltspawn der Contest-Welt - kein individueller Shortcut zum eigenen Bauplatz; eigenes Bett wird weiterhin respektiert; live auf Spigot 26.3 verifiziert)
+- [ ] Nach dem Tod muss der Spieler wieder in seinem bisherigen Team sein (gleiche Gruppe, gleiche Plot-Rechte, Scoreboard/Farbe) - keine Neuzuweisung und kein Verlust der Gruppenzugehoerigkeit beim Respawn. (gemeldet im Live-Betrieb auf mc2 am 2026-10-16)
 
 ### 7. Scoreboard und persönliche Statistiken
 - [ ] Live-Sidebar mit Restzeit, Rangfolge aller Teams, eigenem Team und persönlichem Bau-Beitrag ergänzen.
