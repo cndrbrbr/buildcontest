@@ -11,6 +11,7 @@ import io.github.cndrbrbr.buildcontest.manager.InventoryVaultManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
+import io.github.cndrbrbr.buildcontest.manager.VoteManager;
 import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.model.Group;
 import io.github.cndrbrbr.buildcontest.persistence.DataStore;
@@ -37,7 +38,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private static final List<String> SUBCOMMANDS = List.of(
             "join", "setgroups", "setgroupsize", "setplotsize",
             "setdistance", "setscore", "assign", "start", "pause", "resume", "end", "deleteworld", "automode",
-            "placestartstones", "reload");
+            "placestartstones", "reload", "vote");
 
     private final BuildContestPlugin plugin;
     private final MainConfig mainConfig;
@@ -94,7 +95,8 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case "setscore" -> requireAdmin(sender) && requireNotRunning(sender) && handleSetScore(sender, args);
             case "assign" -> requireAdmin(sender) && handleAssign(sender, args);
             case "start" -> requireAdmin(sender)
-                    && handleStart(sender, args.length > 1 && "confirm".equalsIgnoreCase(args[1]));
+                    && handleStartWithVote(sender, args.length > 1 && "confirm".equalsIgnoreCase(args[1]));
+            case "vote" -> handleVote(sender, args);
             case "pause" -> requireAdmin(sender) && handlePause(sender);
             case "resume" -> requireAdmin(sender) && handleResume(sender);
             case "end" -> requireAdmin(sender) && handleEnd(sender);
@@ -326,6 +328,73 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     }
 
     /**
+     * {@code /bc start}: erst stimmen die Spieler ueber PvP und Spieldauer
+     * ab (siehe VoteManager), dann startet der Contest mit dem Ergebnis.
+     */
+    private boolean handleStartWithVote(CommandSender sender, boolean confirmed) {
+        if (gameStateManager.isRunning()) {
+            sender.sendMessage("§cEin Contest läuft bereits. Erst /bc end ausführen, bevor ein neuer gestartet wird.");
+            return true;
+        }
+        if (worldManager.worldExists() && !confirmed) {
+            // Gleiche Rueckfrage wie bisher, siehe handleStart.
+            return handleStart(sender, false);
+        }
+        startWithVote(sender);
+        return true;
+    }
+
+    /** Startet die Abstimmung und danach den Contest (auch fuer den Automatikmodus). */
+    public void startWithVote(CommandSender sender) {
+        if (plugin.getVoteManager().isActive()) {
+            sender.sendMessage("§cEs läuft bereits eine Abstimmung.");
+            return;
+        }
+        plugin.getVoteManager().start(result -> {
+            gameStateManager.setPvpEnabled(result.pvp());
+            handleStart(sender, true, result.durationMinutes());
+        });
+    }
+
+    public boolean isVoteActive() {
+        return plugin.getVoteManager().isActive();
+    }
+
+    private boolean handleVote(CommandSender sender, String[] args) {
+        if (!(sender instanceof Player player)) {
+            sender.sendMessage("§cNur Spieler können abstimmen.");
+            return true;
+        }
+        VoteManager votes = plugin.getVoteManager();
+        if (args.length < 3) {
+            if (votes.isActive()) {
+                votes.sendBallot(player);
+            } else {
+                sender.sendMessage("§eBenutzung: /bc vote pvp <ja|nein> oder /bc vote zeit <15|30|45|60>");
+            }
+            return true;
+        }
+        switch (args[1].toLowerCase(Locale.ROOT)) {
+            case "pvp" -> {
+                String answer = args[2].toLowerCase(Locale.ROOT);
+                if (!answer.equals("ja") && !answer.equals("nein")) {
+                    sender.sendMessage("§eBenutzung: /bc vote pvp <ja|nein>");
+                    return true;
+                }
+                votes.votePvp(player, answer.equals("ja"));
+            }
+            case "zeit" -> {
+                int minutes = parseIntOrMessage(sender, args[2]);
+                if (minutes >= 0) {
+                    votes.voteDuration(player, minutes);
+                }
+            }
+            default -> sender.sendMessage("§eBenutzung: /bc vote pvp <ja|nein> oder /bc vote zeit <15|30|45|60>");
+        }
+        return true;
+    }
+
+    /**
      * @param forcedDurationMinutes bei &gt; 0 ueberschreibt dies die
      *                              konfigurierte game.duration-minutes fuer
      *                              diesen einen Contest (siehe
@@ -412,6 +481,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
      * {@code /bc end} (siehe GameStateManager#setOnTimerEnd).
      */
     public boolean handleEnd(CommandSender sender) {
+        plugin.getVoteManager().cancel();
         gameStateManager.end();
         teleportAllBackToEntryWorld();
         sender.sendMessage("§aBuildcontest beendet. Baufortschritt ist jetzt eingefroren.");

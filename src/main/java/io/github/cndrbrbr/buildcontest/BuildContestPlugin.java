@@ -6,7 +6,9 @@ import io.github.cndrbrbr.buildcontest.config.ScoreConfig;
 import io.github.cndrbrbr.buildcontest.listener.BlockListener;
 import io.github.cndrbrbr.buildcontest.listener.PlayerConnectionListener;
 import io.github.cndrbrbr.buildcontest.listener.ProtectionListener;
+import io.github.cndrbrbr.buildcontest.listener.PvpListener;
 import io.github.cndrbrbr.buildcontest.manager.AutomodeManager;
+import io.github.cndrbrbr.buildcontest.manager.ContestTimerDisplay;
 import io.github.cndrbrbr.buildcontest.manager.EntryTeleportManager;
 import io.github.cndrbrbr.buildcontest.manager.GameStateManager;
 import io.github.cndrbrbr.buildcontest.manager.GroupManager;
@@ -14,6 +16,7 @@ import io.github.cndrbrbr.buildcontest.manager.InventoryVaultManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
+import io.github.cndrbrbr.buildcontest.manager.VoteManager;
 import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.persistence.DataStore;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -34,6 +37,7 @@ public final class BuildContestPlugin extends JavaPlugin {
     private EntryTeleportManager entryTeleportManager;
     private InventoryVaultManager inventoryVaultManager;
     private DataStore dataStore;
+    private VoteManager voteManager;
     private BukkitTask autosaveTask;
 
     @Override
@@ -57,6 +61,9 @@ public final class BuildContestPlugin extends JavaPlugin {
         entryTeleportManager = new EntryTeleportManager(gameStateManager, groupManager, plotManager,
                 inventoryVaultManager);
 
+        voteManager = new VoteManager(this);
+        new ContestTimerDisplay(this, gameStateManager);
+
         if (dataStore.load()) {
             getLogger().info("Gespeicherter Spielstand aus data.yml geladen.");
         }
@@ -70,6 +77,9 @@ public final class BuildContestPlugin extends JavaPlugin {
                 new PlayerConnectionListener(mainConfig, groupManager, scoreboardManager, entryTeleportManager,
                         gameStateManager), this);
         getServer().getPluginManager().registerEvents(automodeManager, this);
+        getServer().getPluginManager().registerEvents(voteManager, this);
+        getServer().getPluginManager().registerEvents(
+                new PvpListener(mainConfig, gameStateManager, groupManager), this);
 
         BuildContestCommand command = new BuildContestCommand(
                 this, mainConfig, scoreConfig, groupManager, plotManager,
@@ -124,6 +134,10 @@ public final class BuildContestPlugin extends JavaPlugin {
         }
         long ticks = minutes * 60L * 20L;
         autosaveTask = getServer().getScheduler().runTaskTimer(this, dataStore::save, ticks, ticks);
+    }
+
+    public VoteManager getVoteManager() {
+        return voteManager;
     }
 
     public MainConfig getMainConfig() {

@@ -216,7 +216,7 @@ public final class AutomodeManager implements Listener {
     }
 
     private boolean gameRunningOrSelectionInProgress() {
-        return waiting || gameStateManager.isRunning();
+        return waiting || gameStateManager.isRunning() || command.isVoteActive();
     }
 
     @EventHandler
@@ -391,7 +391,8 @@ public final class AutomodeManager implements Listener {
      */
     private void startContestNow() {
         showRunningStatus();
-        command.handleStart(Bukkit.getConsoleSender(), true, forcedDurationMinutes);
+        // PvP und Spieldauer bestimmen die Spieler per Abstimmung.
+        command.startWithVote(Bukkit.getConsoleSender());
     }
 
     /**
@@ -452,7 +453,7 @@ public final class AutomodeManager implements Listener {
                 sign.setLine(0, ChatColor.BOLD + presets[i].label);
                 sign.setLine(1, "Rechtsklick");
                 sign.setLine(2, "zum Start");
-                sign.setLine(3, "(30 Minuten)");
+                sign.setLine(3, "(Dauer per Vote)");
                 sign.getPersistentDataContainer().set(startStoneKey, PersistentDataType.STRING, presets[i].label);
                 sign.update(true);
             }

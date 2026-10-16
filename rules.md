@@ -215,10 +215,14 @@ Für schnelle, selbsterklärende Events ohne manuelle Vorbereitung gibt es vier 
 
 ### Start-Steine
 
-Damit ein Contest auch **ohne anwesenden Admin** beginnen kann, stellt der Admin in der Eingangswelt für jedes Preset einen beschrifteten Stein auf (`/bc placestartstones`). Ein Rechtsklick auf einen Stein löst dasselbe Preset aus wie der entsprechende `/bc automode`-Befehl, mit einem Unterschied bei der Spieldauer:
+Damit ein Contest auch **ohne anwesenden Admin** beginnen kann, stellt der Admin in der Eingangswelt für jedes Preset einen beschrifteten Stein auf (`/bc placestartstones`). Ein Rechtsklick auf einen Stein löst dasselbe Preset aus wie der entsprechende `/bc automode`-Befehl.
 
-- Über einen Start-Stein ausgelöste Contests laufen **immer genau 30 Minuten**, unabhängig von der konfigurierten Standard-Spieldauer.
-- Über `/bc automode` durch einen Admin ausgelöste Contests laufen weiterhin nach der konfigurierten Dauer (Standard: unbegrenzt) - der Admin steuert das Spiel über Befehle und entscheidet selbst über ein Zeitlimit.
+### Abstimmung vor dem Start: PvP und Spieldauer
+
+Vor **jedem** Contest-Start (Start-Stein, `/bc automode`, `/bc start`) stimmen die Spieler 60 Sekunden lang ab – per Klick im Chat oder mit `/bc vote pvp ja|nein` und `/bc vote zeit 15|30|45|60`. Die Abstimmung endet früher, sobald alle Online-Spieler beide Fragen beantwortet haben.
+
+- **PvP**: nur bei Mehrheit für „Ja“ (Gleichstand oder keine Stimmen = aus). PvP gilt nur in der Contest-Welt und nur gegen **andere Teams** – das eigene Team kann sich nie verletzen.
+- **Spieldauer**: die meistgewählte Option, bei Gleichstand die kürzere, ohne Stimmen 30 Minuten. Die Restzeit steht als Bossbar oben im Bild; bei 5 Minuten, 1 Minute und 10 Sekunden kommt eine Warnung, danach endet der Contest automatisch.
 
 Es darf **immer nur ein Contest gleichzeitig laufen** (siehe Abschnitt 11). Solange ein Contest läuft oder eine Teamwahl im Gange ist, zeigt eine Anzeige in der Eingangswelt den aktuellen Status an; die Start-Steine lösen währenddessen keinen weiteren Contest aus.
 

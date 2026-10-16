@@ -70,6 +70,8 @@ public final class DataStore {
         yaml.set("state.frozen", state.frozen());
         yaml.set("state.end-timestamp", state.endTimestampMillis());
         yaml.set("state.remaining-at-pause", state.remainingMillisAtPause());
+        yaml.set("state.pvp", gameStateManager.isPvpEnabled());
+        yaml.set("state.duration-millis", gameStateManager.getDurationMillis());
         yaml.set("state.teleported-players",
                 state.teleportedPlayers().stream().map(UUID::toString).toList());
 
@@ -161,6 +163,9 @@ public final class DataStore {
                 yaml.getLong("state.end-timestamp", -1),
                 yaml.getLong("state.remaining-at-pause", -1),
                 teleportedPlayers));
+
+        gameStateManager.setPvpEnabled(yaml.getBoolean("state.pvp", false));
+        gameStateManager.setDurationMillis(yaml.getLong("state.duration-millis", -1));
 
         groupManager.importMembership(readMembership(yaml));
         readGroupMeta(yaml);

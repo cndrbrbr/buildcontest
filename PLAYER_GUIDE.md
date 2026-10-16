@@ -50,6 +50,16 @@ den Steinen zeigt, ob gerade schon ein Contest läuft (dann warten, bis er vorbe
   Bett landet ihr am Weltspawn der Contest-Welt (nicht zurück in der Eingangswelt); schlaft ihr auf
   eurem Bauplatz, respawnt ihr dort.
 
+## Abstimmung vor dem Start
+
+Bevor ein Contest beginnt, habt ihr 60 Sekunden Zeit abzustimmen – einfach im Chat anklicken
+oder `/bc vote pvp ja|nein` und `/bc vote zeit 15|30|45|60` eingeben:
+
+- **PvP**: Gibt es eine Mehrheit für „Ja“, könnt ihr Spieler des **anderen** Teams angreifen.
+  Euer eigenes Team könnt ihr nie verletzen.
+- **Spieldauer**: 15, 30, 45 oder 60 Minuten. Die Restzeit seht ihr oben als Leiste; wenn sie
+  abgelaufen ist, endet der Contest automatisch.
+
 ## Bauen
 
 - Euer Bauplatz ist eine rechteckige, flach planierte Fläche auf eurer eigenen, lokal passenden

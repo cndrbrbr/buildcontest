@@ -56,6 +56,10 @@ public final class GameStateManager {
      * die internen running/frozen-Flags. Siehe BuildContestPlugin#onEnable.
      */
     private Runnable onTimerEnd;
+    /** Per Abstimmung festgelegt (siehe VoteManager): PvP gegen andere Teams erlaubt? */
+    private boolean pvpEnabled;
+    /** Gesamtdauer des laufenden Contests, nur fuer die Fortschrittsanzeige (ContestTimerDisplay). */
+    private long durationMillis = -1;
 
     public GameStateManager(BuildContestPlugin plugin, MainConfig mainConfig) {
         this.plugin = plugin;
@@ -79,6 +83,33 @@ public final class GameStateManager {
     /** Nach Spielende wird der Baufortschritt eingefroren (siehe rules.md#spielablauf--ende). */
     public boolean isFrozen() {
         return frozen;
+    }
+
+    public boolean isPvpEnabled() {
+        return pvpEnabled;
+    }
+
+    public void setPvpEnabled(boolean pvpEnabled) {
+        this.pvpEnabled = pvpEnabled;
+    }
+
+    public long getDurationMillis() {
+        return durationMillis;
+    }
+
+    public void setDurationMillis(long durationMillis) {
+        this.durationMillis = durationMillis;
+    }
+
+    /** Restzeit in ms; -1 ohne Zeitlimit oder wenn kein Contest laeuft. */
+    public long getRemainingMillis() {
+        if (!running) {
+            return -1;
+        }
+        if (paused) {
+            return remainingMillisAtPause;
+        }
+        return endTimestampMillis > 0 ? Math.max(0, endTimestampMillis - System.currentTimeMillis()) : -1;
     }
 
     public void start() {
@@ -112,9 +143,11 @@ public final class GameStateManager {
         int durationMinutes = forcedDurationMinutes > 0 ? forcedDurationMinutes : mainConfig.getDurationMinutes();
         if (durationMinutes > 0) {
             endTimestampMillis = System.currentTimeMillis() + durationMinutes * 60_000L;
+            durationMillis = durationMinutes * 60_000L;
             scheduleTimer(durationMinutes * 60L * 20L);
         } else {
             endTimestampMillis = -1;
+            durationMillis = -1;
         }
     }
 
