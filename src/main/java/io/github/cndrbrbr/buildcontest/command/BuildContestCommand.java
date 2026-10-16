@@ -159,6 +159,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             }
             case ALREADY_IN_GROUP -> sender.sendMessage("§cDu bist bereits einer Gruppe zugeordnet.");
             case GROUP_FULL -> sender.sendMessage("§cDiese Gruppe ist bereits voll.");
+            case UNBALANCED -> sender.sendMessage("§cDiese Gruppe hat schon mehr Spieler - bitte eine kleinere wählen.");
             case NO_SUCH_GROUP -> sender.sendMessage("§cDiese Gruppe existiert nicht.");
             case WRONG_MODE ->
                     sender.sendMessage("§cDie freie Gruppenwahl ist deaktiviert (Configfile-Zuweisung aktiv).");
@@ -355,6 +356,15 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
 
         scoreManager.clear();
         plotManager.generatePlots(groupManager.getGroups().values());
+        // Wer beim Start noch keine Gruppe hat, wird auf die Teams verteilt,
+        // damit sie gleich gross sind (nur bei freier Wahl; volle Teams
+        // bleiben voll, Uebrige bleiben dann Zuschauer).
+        if (mainConfig.getAssignmentMode() == MainConfig.AssignmentMode.FREE) {
+            for (Player online : plugin.getServer().getOnlinePlayers()) {
+                groupManager.assignBalanced(online.getUniqueId()).ifPresent(group -> online.sendMessage(
+                        "§aDu wurdest Team " + group.getColor() + group.getName() + "§a zugeteilt."));
+            }
+        }
         gameStateManager.start(forcedDurationMinutes);
         scoreboardManager.refreshAll();
         entryTeleportManager.teleportAllNewEntrants();

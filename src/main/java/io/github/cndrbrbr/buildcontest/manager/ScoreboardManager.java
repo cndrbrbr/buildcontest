@@ -7,6 +7,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.scoreboard.DisplaySlot;
 import org.bukkit.scoreboard.Objective;
 import org.bukkit.scoreboard.Scoreboard;
+import org.bukkit.scoreboard.Team;
 
 import java.util.Comparator;
 import java.util.List;
@@ -70,9 +71,35 @@ public final class ScoreboardManager {
 
         objective.getScore(" ").setScore(line--);
 
+        groupManager.getGroupOf(player.getUniqueId()).ifPresent(own ->
+                objective.getScore(ChatColor.WHITE + "Dein Team: " + own.getColor() + ChatColor.BOLD + own.getName())
+                        .setScore(sorted.size() + 3));
+
         int personalScore = scoreManager.getPersonalScore(player.getUniqueId());
         objective.getScore(ChatColor.AQUA + "Dein Beitrag: " + personalScore).setScore(line);
 
+        registerTeams(scoreboard);
         player.setScoreboard(scoreboard);
+    }
+
+    /**
+     * Farbige Namen ueber dem Kopf und in der Tab-Liste: jede Gruppe wird als
+     * Scoreboard-Team in ihrer Farbe mit Praefix "[Name]" angelegt.
+     */
+    private void registerTeams(Scoreboard scoreboard) {
+        for (Group group : groupManager.getGroups().values()) {
+            Team team = scoreboard.registerNewTeam("bc_" + group.getId());
+            team.setColor(group.getColor());
+            team.setPrefix(group.getColor() + "[" + group.getName() + "] ");
+            team.setAllowFriendlyFire(true);
+        }
+        for (Player online : Bukkit.getOnlinePlayers()) {
+            groupManager.getGroupOf(online.getUniqueId()).ifPresent(group -> {
+                Team team = scoreboard.getTeam("bc_" + group.getId());
+                if (team != null) {
+                    team.addEntry(online.getName());
+                }
+            });
+        }
     }
 }

@@ -58,8 +58,38 @@ class GroupManagerTest {
     @Test
     void joinFailsWhenGroupIsFull() {
         groupManager.join(UUID.randomUUID(), 1);
+        groupManager.join(UUID.randomUUID(), 2);
         groupManager.join(UUID.randomUUID(), 1);
+        groupManager.join(UUID.randomUUID(), 2);
         assertEquals(GroupManager.JoinResult.GROUP_FULL, groupManager.join(UUID.randomUUID(), 1));
+    }
+
+    @Test
+    void joinRejectsGroupThatIsAlreadyLarger() {
+        assertEquals(GroupManager.JoinResult.SUCCESS, groupManager.join(UUID.randomUUID(), 1));
+        assertEquals(GroupManager.JoinResult.UNBALANCED, groupManager.join(UUID.randomUUID(), 1));
+        assertEquals(GroupManager.JoinResult.SUCCESS, groupManager.join(UUID.randomUUID(), 2));
+        assertEquals(GroupManager.JoinResult.SUCCESS, groupManager.join(UUID.randomUUID(), 1));
+    }
+
+    @Test
+    void assignBalancedKeepsGroupsEqual() {
+        for (int i = 0; i < 4; i++) {
+            assertTrue(groupManager.assignBalanced(UUID.randomUUID()).isPresent());
+            int sizeA = groupManager.getGroup(1).orElseThrow().getMembers().size();
+            int sizeB = groupManager.getGroup(2).orElseThrow().getMembers().size();
+            assertTrue(Math.abs(sizeA - sizeB) <= 1);
+        }
+        // max-size 2 je Gruppe: beide voll
+        assertTrue(groupManager.assignBalanced(UUID.randomUUID()).isEmpty());
+    }
+
+    @Test
+    void assignBalancedIgnoresPlayersAlreadyInAGroup() {
+        UUID player = UUID.randomUUID();
+        groupManager.assign(player, 1);
+        assertTrue(groupManager.assignBalanced(player).isEmpty());
+        assertEquals(1, groupManager.getGroupOf(player).orElseThrow().getId());
     }
 
     @Test

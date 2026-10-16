@@ -62,12 +62,23 @@ public final class PlayerConnectionListener implements Listener {
             player.setGameMode(GameMode.ADVENTURE);
         }
 
+        // Wer waehrend eines laufenden Contests ohne Gruppe dazukommt, wird
+        // dem kleineren Team zugeteilt, damit die Teams gleich gross bleiben.
+        if (gameStateManager.isRunning()
+                && mainConfig.getAssignmentMode() == MainConfig.AssignmentMode.FREE) {
+            groupManager.assignBalanced(player.getUniqueId());
+        }
+
         // Erstmaliger Eintritt in einen laufenden Contest (z. B. per
         // CONFIG-Zuweisung gerade oben aufgeloest) - danach keine
         // Teleport-Abkuerzungen mehr, siehe EntryTeleportManager.
         entryTeleportManager.teleportIfFirstEntry(player);
 
-        scoreboardManager.setup(player);
+        if (gameStateManager.isRunning()) {
+            groupManager.getGroupOf(player.getUniqueId()).ifPresent(group -> player.sendMessage(
+                    "§aDu bist in Team " + group.getColor() + "§l" + group.getName() + "§a."));
+        }
+        scoreboardManager.refreshAll();
     }
 
     /**

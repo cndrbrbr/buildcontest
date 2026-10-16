@@ -7,6 +7,7 @@ import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.model.Plot;
 import io.github.cndrbrbr.buildcontest.util.BlockKey;
+import org.bukkit.ChatColor;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.configuration.ConfigurationSection;
@@ -74,6 +75,12 @@ public final class DataStore {
 
         groupManager.exportMembership().forEach((groupId, members) ->
                 yaml.set("groups." + groupId, members.stream().map(UUID::toString).toList()));
+        // Name/Farbe (z. B. Rot/Blau aus dem Automatikmodus) - sonst hiessen
+        // die Teams nach einem Neustart wieder "Gruppe N" in Gelb.
+        groupManager.getGroups().forEach((groupId, group) -> {
+            yaml.set("group-meta." + groupId + ".name", group.getName());
+            yaml.set("group-meta." + groupId + ".color", group.getColor().name());
+        });
 
         plotManager.exportPlots().forEach((groupId, plot) -> {
             String path = "plots." + groupId + ".";
@@ -156,6 +163,7 @@ public final class DataStore {
                 teleportedPlayers));
 
         groupManager.importMembership(readMembership(yaml));
+        readGroupMeta(yaml);
         plotManager.importPlots(readPlots(yaml), groupManager);
 
         for (String line : yaml.getStringList("tracked-blocks")) {
@@ -201,6 +209,30 @@ public final class DataStore {
             }
         }
         return corrected;
+    }
+
+    private void readGroupMeta(YamlConfiguration yaml) {
+        ConfigurationSection section = yaml.getConfigurationSection("group-meta");
+        if (section == null) {
+            return;
+        }
+        for (String key : section.getKeys(false)) {
+            Integer groupId = parseIntKey(key);
+            if (groupId == null) {
+                continue;
+            }
+            groupManager.getGroup(groupId).ifPresent(group -> {
+                String name = section.getString(key + ".name");
+                if (name != null) {
+                    group.setName(name);
+                }
+                try {
+                    group.setColor(ChatColor.valueOf(section.getString(key + ".color", "YELLOW")));
+                } catch (IllegalArgumentException ignored) {
+                    // unbekannte Farbe - Standardfarbe behalten
+                }
+            });
+        }
     }
 
     private Map<Integer, Set<UUID>> readMembership(YamlConfiguration yaml) {

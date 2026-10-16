@@ -49,6 +49,8 @@ import java.util.UUID;
 public final class AutomodeManager implements Listener {
 
     private static final int STONE_STARTED_DURATION_MINUTES = 30;
+    /** Praktisch unbegrenzte Teamgroesse fuer 2xn, siehe {@link #activateInstantSplit}. */
+    private static final int OPEN_GROUP_MAX_SIZE = 100;
 
     public enum Preset {
         TWO_BY_ONE("2x1", 1, 10, SelectionMode.RANDOM_ON_PRESENCE),
@@ -160,6 +162,9 @@ public final class AutomodeManager implements Listener {
      * 2xn: alle aktuell anwesenden Spieler ohne Gruppe werden sofort zufaellig
      * auf zwei Teams aufgeteilt (bei ungerader Anzahl bekommt Blau einen
      * mehr) - keine Ballwahl, keine Wartephase, der Contest startet direkt.
+     * Die Teams bekommen keine feste Obergrenze, damit spaeter Hinzukommende
+     * noch dem jeweils kleineren Team zugeteilt werden koennen (siehe
+     * PlayerConnectionListener#onJoin).
      */
     private void activateInstantSplit(Preset preset, CommandSender sender) {
         List<Player> candidates = onlinePlayersWithoutGroup();
@@ -169,8 +174,7 @@ public final class AutomodeManager implements Listener {
         }
         Collections.shuffle(candidates);
         int sizeRed = candidates.size() / 2;
-        int sizeBlue = candidates.size() - sizeRed;
-        configureGroups(preset, Math.max(sizeRed, sizeBlue));
+        configureGroups(preset, OPEN_GROUP_MAX_SIZE);
 
         for (int i = 0; i < candidates.size(); i++) {
             groupManager.assign(candidates.get(i).getUniqueId(), i < sizeRed ? 1 : 2);
@@ -231,21 +235,18 @@ public final class AutomodeManager implements Listener {
         }
     }
 
-    /** Weist einen Spieler ohne Ballwahl zufaellig einem noch nicht vollen Team zu (siehe Preset#RANDOM_ON_PRESENCE). */
+    /**
+     * Weist einen Spieler ohne Ballwahl dem kleineren, noch nicht vollen Team
+     * zu (bei Gleichstand zufaellig, siehe Preset#RANDOM_ON_PRESENCE).
+     */
     private void randomAssign(Player player) {
-        List<Integer> candidateGroupIds = new ArrayList<>();
-        groupManager.getGroups().values().forEach(group -> {
-            if (!group.isFull()) {
-                candidateGroupIds.add(group.getId());
-            }
-        });
-        if (candidateGroupIds.isEmpty()) {
+        Optional<Group> assigned = groupManager.assignBalanced(player.getUniqueId());
+        if (assigned.isEmpty()) {
             return;
         }
-        int groupId = candidateGroupIds.get((int) (Math.random() * candidateGroupIds.size()));
-        groupManager.assign(player.getUniqueId(), groupId);
-        groupManager.getGroup(groupId).ifPresent(group ->
-                player.sendMessage("§aDu wurdest zufällig Team " + group.getColor() + group.getName() + "§a zugewiesen."));
+        Group group = assigned.get();
+        player.sendMessage("§aDu wurdest Team " + group.getColor() + group.getName() + "§a zugewiesen.");
+        plugin.getScoreboardManager().refreshAll();
         updateBoard();
         checkAutoStart();
     }
@@ -278,6 +279,11 @@ public final class AutomodeManager implements Listener {
 
         int groupId = "RED".equals(team) ? 1 : 2;
         GroupManager.JoinResult result = groupManager.join(player.getUniqueId(), groupId);
+        if (result == GroupManager.JoinResult.UNBALANCED) {
+            player.sendMessage("§cDieses Team hat schon mehr Spieler - die Teams müssen gleich groß sein. "
+                    + "Bitte das andere Team wählen.");
+            return;
+        }
         if (result != GroupManager.JoinResult.SUCCESS) {
             player.sendMessage("§cDieses Team ist bereits voll.");
             return;
@@ -286,6 +292,7 @@ public final class AutomodeManager implements Listener {
         removeBalls(player);
         groupManager.getGroup(groupId).ifPresent(group ->
                 player.sendMessage("§aDu bist Team " + group.getColor() + group.getName() + "§a beigetreten."));
+        plugin.getScoreboardManager().refreshAll();
         updateBoard();
         checkAutoStart();
     }

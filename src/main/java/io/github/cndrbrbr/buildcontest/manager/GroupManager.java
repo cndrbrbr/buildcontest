@@ -3,10 +3,13 @@ package io.github.cndrbrbr.buildcontest.manager;
 import io.github.cndrbrbr.buildcontest.config.MainConfig;
 import io.github.cndrbrbr.buildcontest.model.Group;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Random;
 import java.util.Set;
 import java.util.UUID;
 
@@ -16,6 +19,7 @@ public final class GroupManager {
     private final MainConfig mainConfig;
     private final Map<Integer, Group> groups = new LinkedHashMap<>();
     private final Map<UUID, Integer> membership = new LinkedHashMap<>();
+    private final Random random = new Random();
 
     public GroupManager(MainConfig mainConfig) {
         this.mainConfig = mainConfig;
@@ -59,9 +63,53 @@ public final class GroupManager {
         if (group.isFull()) {
             return JoinResult.GROUP_FULL;
         }
+        if (group.getMembers().size() > smallestOpenGroupSize()) {
+            return JoinResult.UNBALANCED;
+        }
         group.addMember(playerId);
         membership.put(playerId, groupId);
         return JoinResult.SUCCESS;
+    }
+
+    /**
+     * Teilt einen Spieler ohne Gruppe der kleinsten noch nicht vollen Gruppe
+     * zu (bei Gleichstand zufaellig), damit die Teams gleich gross bleiben.
+     * Leer, wenn der Spieler schon in einer Gruppe ist oder alle voll sind.
+     */
+    public Optional<Group> assignBalanced(UUID playerId) {
+        if (membership.containsKey(playerId)) {
+            return Optional.empty();
+        }
+        List<Group> smallest = smallestOpenGroups();
+        if (smallest.isEmpty()) {
+            return Optional.empty();
+        }
+        Group group = smallest.get(random.nextInt(smallest.size()));
+        group.addMember(playerId);
+        membership.put(playerId, group.getId());
+        return Optional.of(group);
+    }
+
+    /** Nicht volle Gruppen mit der aktuell geringsten Mitgliederzahl. */
+    public List<Group> smallestOpenGroups() {
+        int min = smallestOpenGroupSize();
+        List<Group> result = new ArrayList<>();
+        for (Group group : groups.values()) {
+            if (!group.isFull() && group.getMembers().size() == min) {
+                result.add(group);
+            }
+        }
+        return result;
+    }
+
+    private int smallestOpenGroupSize() {
+        int min = Integer.MAX_VALUE;
+        for (Group group : groups.values()) {
+            if (!group.isFull()) {
+                min = Math.min(min, group.getMembers().size());
+            }
+        }
+        return min;
     }
 
     /** Admin-Zuweisung per Befehl oder Configfile-Zuordnung (siehe rules.md#gruppen). */
@@ -104,7 +152,7 @@ public final class GroupManager {
                 return;
             }
             for (UUID playerId : playerIds) {
-                if (group.addMember(playerId)) {
+                if (group.restoreMember(playerId)) {
                     membership.put(playerId, groupId);
                 }
             }
@@ -112,6 +160,8 @@ public final class GroupManager {
     }
 
     public enum JoinResult {
-        SUCCESS, ALREADY_IN_GROUP, GROUP_FULL, NO_SUCH_GROUP, WRONG_MODE
+        SUCCESS, ALREADY_IN_GROUP, GROUP_FULL, NO_SUCH_GROUP, WRONG_MODE,
+        /** Die gewaehlte Gruppe hat schon mehr Mitglieder als eine andere, nicht volle Gruppe. */
+        UNBALANCED
     }
 }

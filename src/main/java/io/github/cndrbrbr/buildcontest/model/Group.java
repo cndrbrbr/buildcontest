@@ -50,6 +50,15 @@ public final class Group {
         return members.add(playerId);
     }
 
+    /**
+     * Fuegt ohne Groessenpruefung hinzu - nur zum Wiederherstellen eines
+     * gespeicherten Spielstands (siehe GroupManager#importMembership), der
+     * als massgeblich gilt, auch wenn max-size inzwischen kleiner ist.
+     */
+    public boolean restoreMember(UUID playerId) {
+        return members.add(playerId);
+    }
+
     public void removeMember(UUID playerId) {
         members.remove(playerId);
     }
