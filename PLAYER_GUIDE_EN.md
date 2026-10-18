@@ -1,5 +1,7 @@
 # Buildcontest – Player Guide
 
+_Deutsche Fassung: [PLAYER_GUIDE.md](./PLAYER_GUIDE.md)_
+
 A short introduction for players. The full rules are in [`rules.md`](./rules.md) (German), the
 exact score table is in [`scoreboard-config.yml`](./scoreboard-config.yml).
 

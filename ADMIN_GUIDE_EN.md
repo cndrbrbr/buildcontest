@@ -1,5 +1,7 @@
 # Buildcontest – Admin Guide
 
+_Deutsche Fassung: [ADMIN_GUIDE.md](./ADMIN_GUIDE.md)_
+
 This guide is for server admins who want to set up and run a build contest. The full game
 description is in [`rules.md`](./rules.md) (German), the score table is in
 [`scoreboard-config.yml`](./scoreboard-config.yml).

@@ -1,21 +1,20 @@
 # Buildcontest – Admin-Anleitung
 
+_English version: [ADMIN_GUIDE_EN.md](./ADMIN_GUIDE_EN.md)_
+
 Diese Anleitung richtet sich an Server-Admins, die einen Buildcontest einrichten und leiten wollen.
 Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punktetabelle in
 [`scoreboard-config.yml`](./scoreboard-config.yml).
 
 > **Hinweis:** `rules.md` beschreibt das vereinbarte Zielregelwerk; diese Anleitung beschreibt den
-> aktuell implementierten Stand. Beide sind noch nicht vollständig deckungsgleich – offene Punkte
-> stehen in [`TODO.md`](./TODO.md). Insbesondere kennt das Plugin noch kein `/bc pause`/`/bc resume`
-> (Blockplatzierung während einer evtl. zukünftigen Pause lässt sich also noch nicht einfrieren),
-> und das Block-Tracking/die Verbindungsprüfung pruefen noch nicht alle in rules.md §5
-> beschriebenen Sonderfaelle (Kolben, Hopper, Fremdplugins).
+> in Version 1.0 implementierten Stand. Offene Punkte stehen in [`TODO.md`](./TODO.md).
 
 ## Voraussetzungen
 
 - Spigot- oder **Paper-Server für Minecraft 26.3** (siehe `pom.xml#spigot.version` / `plugin.yml#api-version`).
 - Java 25 auf dem Server.
-- Die gebaute `buildcontest-<version>.jar` (siehe [`README.md`](./README.md)) im `plugins`-Ordner.
+- Die gebaute `buildcontest-<version>.jar` (siehe [`README.md`](./README.md), oder aus den
+  [Releases](https://github.com/cndrbrbr/buildcontest/releases)) im `plugins`-Ordner.
 
 ## Installation
 
@@ -23,6 +22,7 @@ Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punkt
 2. Beim ersten Start legt das Plugin `plugins/BuildContest/config.yml` und
    `plugins/BuildContest/scoreboard-config.yml` an.
 3. `buildcontest.admin` (Standard: nur OP) an die Personen vergeben, die den Contest leiten sollen.
+   `buildcontest.use` (Standard: alle) erlaubt `/bc join` und `/bc vote`.
 
 ## Konfiguration (`config.yml`)
 
@@ -37,7 +37,7 @@ Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punkt
 | `plots.surface-y` | Nur Fallback, falls für einen Bauplatz keine trockene Stelle gefunden wird (siehe unten) – normalerweise wird der Y-Level **für jeden Bauplatz einzeln** automatisch aus dem tatsächlichen Gelände ermittelt, verschiedene Bauplätze können also unterschiedliche Höhen haben |
 | `plots.center-x` / `plots.center-z` | Mittelpunkt des Bauplatz-Rasters |
 | `plots.world` | **Siehe Warnung unten** |
-| `game.duration-minutes` | Automatisches Ende nach X Minuten, `0` = nur `/bc end` |
+| `game.duration-minutes` | Automatisches Ende nach X Minuten, `0` = nur `/bc end`. Seit der Abstimmung vor dem Start nutzen alle Startwege stattdessen die abgestimmte Dauer (15–60 min) |
 | `game.autosave-minutes` | Intervall für automatisches Sichern des Spielstands, `0` = aus |
 | `game.auto-delete-world-on-end` | Bauplatz-Welt direkt bei `/bc end` automatisch löschen? Standard `false` (dann per `/bc deleteworld` manuell) |
 
@@ -89,11 +89,19 @@ rules.md#punktesystem). Eigene Werte setzen:
    ```
    /bc assign <spieler> <gruppe>
    ```
+   Die Teams werden gleich groß gehalten: Die freie Wahl lehnt das größere Team ab, Zufalls-
+   zuweisung, Spielstart und später Hinzukommende landen im kleineren Team. Teamfarbe und
+   `[Team]`-Präfix stehen über dem Kopf und in der Tab-Liste.
 3. **Start**:
    ```
    /bc start
    ```
-   Erzeugt die frische Bauplatz-Welt (neuer Zufalls-Seed), ermittelt für **jeden** Bauplatz
+   Zuerst läuft eine **60-Sekunden-Abstimmung** für alle Online-Spieler: PvP ja/nein (nur gegen
+   andere Teams, Gleichstand = kein PvP) und die Spieldauer (15, 30, 45 oder 60 Minuten; die
+   meisten Stimmen gewinnen, bei Gleichstand die kürzere, ohne Stimmen 30). Die Abstimmung endet
+   früher, sobald alle beide Fragen beantwortet haben.
+
+   Danach erzeugt das Plugin die frische Bauplatz-Welt (neuer Zufalls-Seed), ermittelt für **jeden** Bauplatz
    einzeln eine trockene, lokal passende Höhe (verschiedene Bauplätze können unterschiedliche
    Y-Level haben), verteilt sie im Raster und planiert sie, und setzt alle Scores aus einem
    eventuell vorherigen Contest zurück. Das kann je nach Bauplatzgröße/-anzahl einige Sekunden
@@ -104,18 +112,21 @@ rules.md#punktesystem). Eigene Werte setzen:
      `/bc start` einmal nach: `/bc start confirm` erzeugt die neue Welt und löscht die alte damit
      unwiderruflich (siehe rules.md#spielablauf--ende).
 
-   Jeder Spieler mit Gruppenzuordnung bekommt dabei **einmalig** eine sichere Startposition auf
-   seinem Bauplatz – online Spieler sofort bei `/bc start`, später beitretende/zugewiesene Spieler
-   bei `/bc join`/`/bc assign` bzw. beim ersten Einloggen. Danach bietet das Plugin bewusst
+   Jeder Spieler mit Gruppenzuordnung wird dabei **einmalig** neben den Beacon seines Teams
+   gesetzt – online Spieler sofort beim Start, später beitretende/zugewiesene Spieler bei
+   `/bc join`/`/bc assign` bzw. beim ersten Einloggen. Ohne eigenes Bett oder Respawn-Anker
+   respawnen Spieler ebenfalls am Beacon ihres Teams. Danach bietet das Plugin bewusst
    **keine** weiteren Teleport-Abkürzungen mehr an (kein `/bc tp` o. ä.) – normale Fortbewegung
    (zu Fuß, Boot, Pferd, Minecart, Nether …) ist Teil des Spiels.
 
    Direkt außerhalb jeder Bauplatz-Südkante steht automatisch ein aktiver Beacon auf einer kleinen
    Eisenblock-Pyramide – auf derselben Höhe wie der Bauplatz, mit einer bis zum Himmel freigeräumten
    Schneise zum Bauplatz (nie im Berg). Er ist Orientierungshilfe und Spawnpunkt des Teams, kann von
-   niemandem abgebaut werden und zählt nicht zur Wertung (liegt außerhalb der Bauplatzgrenzen).
+   niemandem abgebaut werden (auch geschützt gegen Explosionen und Kolben) und zählt nicht zur
+   Wertung (liegt außerhalb der Bauplatzgrenzen).
 4. **Laufenlassen**: Scoreboard, Schutzmechanismen und Punktewertung laufen automatisch (siehe
-   rules.md#bauregeln, #schutzmechanismen, #scoreboard-anzeige).
+   rules.md#bauregeln, #schutzmechanismen, #scoreboard-anzeige). Die Restzeit sehen alle als
+   Bossbar, mit Warnungen bei 5 Minuten, 1 Minute und 10 Sekunden.
 
    Bei Bedarf (z. B. Pause, technisches Problem) `/bc pause` ausführen: Timer hält an, die
    **gesamte** Contest-Welt wird für Platzierung/Abbau eingefroren (nicht nur die Bauplätze) –
@@ -128,7 +139,7 @@ rules.md#punktesystem). Eigene Werte setzen:
    ```
    Friert den Baufortschritt ein, teleportiert alle Spieler aus der Bauplatz-Welt zurück in die
    Eingangswelt (Server-Hauptwelt) und gibt den Endstand (Rangliste nach Gruppenpunkten) im Chat
-   bekannt. Läuft auch automatisch nach `game.duration-minutes`, falls gesetzt.
+   bekannt. Läuft auch automatisch, sobald die abgestimmte Spielzeit abgelaufen ist.
 6. **Bauplatz-Welt löschen** (optional, siehe rules.md#spielablauf--ende): Bleibt nach `/bc end`
    zunächst stehen, damit die Bauten noch begutachtet werden können. Danach entweder
    `/bc deleteworld` manuell ausführen, oder `game.auto-delete-world-on-end: true` setzen, damit das
@@ -145,14 +156,13 @@ Gruppen** (Rot und Blau):
 | `2x1` | 1 | Keine Ballwahl – die ersten zwei Beitretenden werden zufällig Rot/Blau zugewiesen |
 | `2x2` | 2 | Rot/Blau-Ball, Spieler wählen per Rechtsklick selbst |
 | `2x4` | 4 | Rot/Blau-Ball, Spieler wählen per Rechtsklick selbst |
-| `2xn` | alle Anwesenden ohne Gruppe, halbiert | Keine Ballwahl – sofortige zufällige Zweiteilung, startet ohne Wartephase direkt |
+| `2xn` | alle Anwesenden ohne Gruppe, halbiert | Keine Ballwahl – sofortige zufällige Zweiteilung, startet ohne Wartephase direkt; Nachzügler kommen ins kleinere Team |
 
 ```
 /bc automode <2x1|2x2|2x4|2xn>
 ```
 
-Per Admin-Befehl aktiviert, läuft der Contest mit der **konfigurierten** Spieldauer (Standard:
-unbegrenzt).
+Wie bei `/bc start` stimmen die Spieler vor Beginn über PvP und Spieldauer ab.
 
 ### Start-Steine
 
@@ -168,8 +178,7 @@ Platzieren an einer anderen Stelle (z. B. nach einem Umbau der Lobby):
 Stellt an der aktuellen Position des Admins für jedes Preset einen beschrifteten Stein (Stein-
 Block + Schild) sowie eine Statusanzeige auf. Ein Rechtsklick auf ein Schild löst dasselbe Preset
 aus wie der entsprechende `/bc automode`-Befehl – **damit kann auch ohne anwesenden Admin ein
-Contest beginnen**. Einziger Unterschied: über einen Stein gestartete Contests laufen immer genau
-**30 Minuten**, unabhängig von `game.duration-minutes`.
+Contest beginnen**. Die Spieldauer wird wie bei den anderen Startwegen abgestimmt.
 
 Es läuft immer nur ein Contest/eine Teamwahl gleichzeitig – die Statusanzeige zeigt "Bereit" oder
 "Contest läuft"; währenddessen lösen die Steine keinen weiteren Contest aus. `/bc end` setzt die
@@ -189,7 +198,7 @@ Anzeige zurück, auch bei natürlichem Zeitablauf (nicht nur bei explizitem `/bc
 
 ## Persistenz
 
-Gruppenmitgliedschaft, Bauplätze, getrackte Blöcke und der Spielstatus werden zusätzlich zur
+Gruppenmitgliedschaft, Teamnamen und -farben, Bauplätze, getrackte Blöcke, PvP-Einstellung und der Spielstatus werden zusätzlich zur
 Minecraft-Welt in `plugins/BuildContest/data.yml` gesichert – automatisch alle
 `game.autosave-minutes` sowie beim sauberen Server-Stopp. Ein Server-Neustart während eines
 laufenden Contests lädt diesen Stand beim Aktivieren automatisch wieder; ein noch laufender
@@ -213,19 +222,22 @@ spielentscheidenden Einstellungen lassen sich erst nach `/bc end` wieder ändern
 
 | Befehl | Wirkung |
 |---|---|
+| `/bc join <gruppe>` | (Spieler) Im `FREE`-Modus einer Gruppe beitreten |
+| `/bc vote pvp <ja\|nein>` | (Spieler) In der Abstimmung vor dem Start für/gegen PvP stimmen |
+| `/bc vote zeit <15\|30\|45\|60>` | (Spieler) Für eine Spieldauer in Minuten stimmen |
 | `/bc setgroups <n>` | Anzahl der Gruppen festlegen (bestehende Mitgliedschaften gehen verloren) |
 | `/bc setgroupsize <n>` | Maximale Gruppengröße festlegen |
 | `/bc setplotsize <x> <z>` | Bauplatzgröße festlegen |
 | `/bc setdistance <min> <max>` | Mindest-/Maximalabstand zwischen Bauplätzen |
 | `/bc setscore <block> <punkte>` | Punktwert für einen Blocktyp (nur Laufzeit) |
 | `/bc assign <spieler> <gruppe>` | Spieler einer Gruppe zuweisen |
-| `/bc start` | Neuen Contest starten: Welt neu erzeugen, Bauplätze generieren, Scores zurücksetzen (abgelehnt, falls bereits ein Contest läuft) |
+| `/bc start` | Abstimmung durchführen, dann neuen Contest starten: Welt neu erzeugen, Bauplätze generieren, Scores zurücksetzen (abgelehnt, falls bereits ein Contest läuft) |
 | `/bc start confirm` | Wie `/bc start`, aber mit ausdrücklicher Bestätigung, falls noch eine alte Bauplatz-Welt existiert und ersetzt werden soll |
 | `/bc pause` | Timer anhalten, gesamte Contest-Welt für Platzierung/Abbau einfrieren |
 | `/bc resume` | Denselben Contest mit verbleibender Restzeit fortsetzen |
 | `/bc end` | Contest beenden, Endstand bekanntgeben |
 | `/bc deleteworld` | Bauplatz-Welt löschen (siehe `game.auto-delete-world-on-end`) |
-| `/bc automode <2x1\|2x2\|2x4\|2xn>` | Schnellstart-Preset aktivieren (siehe oben, konfigurierte Spieldauer) |
+| `/bc automode <2x1\|2x2\|2x4\|2xn>` | Schnellstart-Preset aktivieren (siehe oben) |
 | `/bc placestartstones` | Beschriftete Start-Steine für alle Presets an der eigenen Position aufstellen |
 | `/bc reload` | `config.yml` und `scoreboard-config.yml` neu laden |
 
