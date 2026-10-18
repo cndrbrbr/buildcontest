@@ -6,7 +6,7 @@
 
     <groupId>io.github.cndrbrbr</groupId>
     <artifactId>buildcontest</artifactId>
-    <version>0.9.10</version>
+    <version>1.0</version>
     <packaging>jar</packaging>
 
     <name>Buildcontest</name>
