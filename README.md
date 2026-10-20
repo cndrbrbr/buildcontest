@@ -22,3 +22,7 @@ Die fertige Plugin-JAR liegt danach in `target/buildcontest-<version>.jar` und k
 ## Persistenz
 
 Gruppenmitgliedschaft, Bauplätze, gewertete Blöcke und der Spielstatus werden zusätzlich zur Minecraft-Welt in `plugins/Buildcontest/data.yml` gesichert (siehe `persistence.DataStore`) – automatisch alle `game.autosave-minutes` (Standard 5 Minuten, `config.yml`) sowie beim sauberen Server-Stopp. Nach einem Neustart lädt das Plugin diesen Stand beim Aktivieren automatisch wieder, ein laufender Contest geht also nicht verloren.
+
+Erweiterungen  
+Wenn nicht alle pvp wollen? Könnte man das markieren und so eine art schutzweste verteilen, an die die das nicht wollen  
+Wenn man mit besonderen blöcken zusammenhängend etwas gebaut hat? Wäre das gut sonderpunkte zu bekommen oder? Geschwindigkeit zu erhalten
