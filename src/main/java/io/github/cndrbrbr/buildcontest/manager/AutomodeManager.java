@@ -543,8 +543,8 @@ public final class AutomodeManager implements Listener {
         board = world.spawn(boardLocation, TextDisplay.class, entity -> {
             entity.setBillboard(Display.Billboard.CENTER);
             entity.setPersistent(false);
+            entity.setText(String.join("\n", statusLines()));
         });
-        refreshBoard();
     }
 
     private void removeBoard() {
@@ -563,7 +563,10 @@ public final class AutomodeManager implements Listener {
         if (boardLocation == null) {
             return;
         }
-        if (board == null || !board.isValid()) {
+        // isDead statt isValid: direkt nach dem Spawn (z. B. waehrend
+        // ChunkLoadEvent) ist das Entity noch nicht "valid", und ein
+        // nicht-persistentes Entity wird beim Chunk-Entladen entfernt.
+        if (board == null || board.isDead()) {
             World world = boardLocation.getWorld();
             if (world == null || !world.isChunkLoaded(boardLocation.getBlockX() >> 4, boardLocation.getBlockZ() >> 4)) {
                 return;
