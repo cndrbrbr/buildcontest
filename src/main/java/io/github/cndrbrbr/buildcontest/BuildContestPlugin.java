@@ -98,6 +98,7 @@ public final class BuildContestPlugin extends JavaPlugin {
         // nutzbar sein - beim allerersten Serverstart automatisch am
         // Weltspawn der Eingangswelt aufstellen, falls noch nie passiert.
         automodeManager.placeStartStonesIfMissing();
+        automodeManager.findBoardLocationInLoadedChunks();
 
         getLogger().info("Buildcontest aktiviert.");
     }

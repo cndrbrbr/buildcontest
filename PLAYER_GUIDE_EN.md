@@ -39,7 +39,8 @@ later are put into the smaller team.
 **Start stones:** If there is a labelled stone with a sign (`2x1`/`2x2`/`2x4`/`2xn`) in the lobby
 world, you can start a contest yourself by right-clicking it, even when no admin is around! A
 status display next to the stones shows whether a contest is already running (if so, wait until
-it is over).
+it is over), with the remaining time and how many players are in each team. `/bc status` shows the
+same in chat.
 
 ## Vote before the start
 

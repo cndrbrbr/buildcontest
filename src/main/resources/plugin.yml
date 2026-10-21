@@ -8,12 +8,12 @@ description: Survival-Buildcontest zwischen mehreren Gruppen mit Punktesystem na
 commands:
   bc:
     description: Buildcontest-Hauptbefehl
-    usage: /<command> <join|tp|setgroups|setgroupsize|setplotsize|setdistance|setscore|assign|start|end|deleteworld|reload>
+    usage: /<command> <join|status|tp|setgroups|setgroupsize|setplotsize|setdistance|setscore|assign|start|end|deleteworld|reload>
     permission: buildcontest.use
 
 permissions:
   buildcontest.use:
-    description: Erlaubt die Nutzung von /bc join
+    description: Erlaubt die Nutzung von /bc join und /bc status
     default: true
   buildcontest.admin:
     description: Erlaubt alle Admin-Unterbefehle von /bc

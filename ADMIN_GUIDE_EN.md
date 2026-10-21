@@ -23,7 +23,7 @@ description is in [`rules.md`](./rules.md) (German), the score table is in
 2. On the first start the plugin creates `plugins/BuildContest/config.yml` and
    `plugins/BuildContest/scoreboard-config.yml`.
 3. Grant `buildcontest.admin` (default: OPs only) to the people who should run the contest.
-   `buildcontest.use` (default: everyone) allows `/bc join` and `/bc vote`.
+   `buildcontest.use` (default: everyone) allows `/bc join`, `/bc vote` and `/bc status`.
 
 ## Configuration (`config.yml`)
 
@@ -174,9 +174,12 @@ admin's current position. Right-clicking a sign triggers the same preset as the 
 `/bc automode` command, **so a contest can start without an admin being present**. The duration
 is decided by the vote, just like for the other start paths.
 
-Only one contest/team selection runs at a time. The status display shows "Bereit" (ready) or
-"Contest läuft" (contest running); while a contest runs, the stones do not trigger another one.
-The display is reset when the contest ends, both on `/bc end` and when the time runs out.
+Only one contest/team selection runs at a time. The status display shows "Bereit" (ready), the
+team selection, the running vote or "Contest läuft" (contest running) with remaining time, PvP and
+per team the number of players (online) and points; while a contest runs, the stones do not
+trigger another one. The display is reset when the contest ends, both on `/bc end` and when the
+time runs out. It reappears automatically after server restarts (position stored in config.yml
+under `startstones.board`); `/bc status` shows the same content in chat.
 
 ### Lobby world, contest world and inventory
 
@@ -216,6 +219,7 @@ time (team changes by an admin are explicitly permitted).
 | Command | Effect |
 |---|---|
 | `/bc join <team>` | (Player) Join a team in `FREE` mode |
+| `/bc status` | (Player) Show whether a contest is running – remaining time, PvP, players and points per team |
 | `/bc vote pvp <ja\|nein>` | (Player) Vote for PvP yes/no during the pre-start vote |
 | `/bc vote zeit <15\|30\|45\|60>` | (Player) Vote for the contest duration in minutes |
 | `/bc setgroups <n>` | Set the number of teams (existing memberships are lost) |

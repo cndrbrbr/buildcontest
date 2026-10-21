@@ -22,7 +22,7 @@ Die vollständige Spielbeschreibung steht in [`rules.md`](./rules.md), die Punkt
 2. Beim ersten Start legt das Plugin `plugins/BuildContest/config.yml` und
    `plugins/BuildContest/scoreboard-config.yml` an.
 3. `buildcontest.admin` (Standard: nur OP) an die Personen vergeben, die den Contest leiten sollen.
-   `buildcontest.use` (Standard: alle) erlaubt `/bc join` und `/bc vote`.
+   `buildcontest.use` (Standard: alle) erlaubt `/bc join`, `/bc vote` und `/bc status`.
 
 ## Konfiguration (`config.yml`)
 
@@ -180,9 +180,12 @@ Block + Schild) sowie eine Statusanzeige auf. Ein Rechtsklick auf ein Schild lö
 aus wie der entsprechende `/bc automode`-Befehl – **damit kann auch ohne anwesenden Admin ein
 Contest beginnen**. Die Spieldauer wird wie bei den anderen Startwegen abgestimmt.
 
-Es läuft immer nur ein Contest/eine Teamwahl gleichzeitig – die Statusanzeige zeigt "Bereit" oder
-"Contest läuft"; währenddessen lösen die Steine keinen weiteren Contest aus. `/bc end` setzt die
-Anzeige zurück, auch bei natürlichem Zeitablauf (nicht nur bei explizitem `/bc end`).
+Es läuft immer nur ein Contest/eine Teamwahl gleichzeitig – die Statusanzeige zeigt "Bereit",
+die Teamwahl, die laufende Abstimmung oder "Contest läuft" mit Restzeit, PvP und je Team Spielerzahl
+(davon online) und Punkten; währenddessen lösen die Steine keinen weiteren Contest aus. `/bc end`
+setzt die Anzeige zurück, auch bei natürlichem Zeitablauf (nicht nur bei explizitem `/bc end`).
+Die Anzeige erscheint nach Serverneustarts automatisch wieder (Position in config.yml unter
+`startstones.board`); denselben Inhalt liefert `/bc status` im Chat.
 
 ### Eingangswelt, Contest-Welt und Inventar
 
@@ -223,6 +226,7 @@ spielentscheidenden Einstellungen lassen sich erst nach `/bc end` wieder ändern
 | Befehl | Wirkung |
 |---|---|
 | `/bc join <gruppe>` | (Spieler) Im `FREE`-Modus einer Gruppe beitreten |
+| `/bc status` | (Spieler) Zeigt, ob ein Contest läuft – Restzeit, PvP, Spieler und Punkte je Team |
 | `/bc vote pvp <ja\|nein>` | (Spieler) In der Abstimmung vor dem Start für/gegen PvP stimmen |
 | `/bc vote zeit <15\|30\|45\|60>` | (Spieler) Für eine Spieldauer in Minuten stimmen |
 | `/bc setgroups <n>` | Anzahl der Gruppen festlegen (bestehende Mitgliedschaften gehen verloren) |

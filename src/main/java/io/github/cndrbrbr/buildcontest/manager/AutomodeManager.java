@@ -10,7 +10,9 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.World;
+import org.bukkit.Chunk;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.block.Sign;
 import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Display;
@@ -20,6 +22,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.world.ChunkLoadEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.PlayerInventory;
 import org.bukkit.inventory.meta.ItemMeta;
@@ -107,6 +110,11 @@ public final class AutomodeManager implements Listener {
         this.gameStateManager = gameStateManager;
         this.ballTeamKey = new NamespacedKey(plugin, "team_ball");
         this.startStoneKey = new NamespacedKey(plugin, "start_stone_preset");
+        loadBoardLocation();
+        // Die Tafel ist nicht persistent und verschwindet beim Entladen ihres
+        // Chunks - der Takt spawnt sie bei Bedarf neu und haelt Restzeit/
+        // Punkte aktuell.
+        plugin.getServer().getScheduler().runTaskTimer(plugin, this::refreshBoard, 20L, 20L);
     }
 
     /** Spaet gebunden, um die zirkulaere Abhaengigkeit mit BuildContestCommand aufzuloesen. */
@@ -139,7 +147,7 @@ public final class AutomodeManager implements Listener {
         waiting = true;
         activePreset = preset;
         configureGroups(preset, preset.groupSize);
-        updateBoard();
+        refreshBoard();
 
         List<Player> candidates = onlinePlayersWithoutGroup();
         if (preset.selectionMode == Preset.SelectionMode.BALL) {
@@ -247,7 +255,7 @@ public final class AutomodeManager implements Listener {
         Group group = assigned.get();
         player.sendMessage("§aDu wurdest Team " + group.getColor() + group.getName() + "§a zugewiesen.");
         plugin.getScoreboardManager().refreshAll();
-        updateBoard();
+        refreshBoard();
         checkAutoStart();
     }
 
@@ -293,7 +301,7 @@ public final class AutomodeManager implements Listener {
         groupManager.getGroup(groupId).ifPresent(group ->
                 player.sendMessage("§aDu bist Team " + group.getColor() + group.getName() + "§a beigetreten."));
         plugin.getScoreboardManager().refreshAll();
-        updateBoard();
+        refreshBoard();
         checkAutoStart();
     }
 
@@ -390,7 +398,7 @@ public final class AutomodeManager implements Listener {
      * BuildContestCommand#handleStart) gilt hier implizit als erteilt.
      */
     private void startContestNow() {
-        showRunningStatus();
+        refreshBoard();
         // PvP und Spieldauer bestimmen die Spieler per Abstimmung.
         command.startWithVote(Bukkit.getConsoleSender());
     }
@@ -459,12 +467,68 @@ public final class AutomodeManager implements Listener {
             }
         }
 
-        boardLocation = new Location(world, baseX + (presets.length - 1) / 2.0, y + 2.5, z);
+        setBoardLocation(new Location(world, baseX + (presets.length - 1) / 2.0, y + 2.5, z));
         spawnStatusBoard();
 
         plugin.getConfig().set("startstones.placed", true);
         plugin.saveConfig();
         return true;
+    }
+
+    /** Gespeicherte Tafel-Position aus config.yml (startstones.board), siehe {@link #setBoardLocation}. */
+    private void loadBoardLocation() {
+        String worldName = plugin.getConfig().getString("startstones.board.world");
+        World world = worldName != null ? Bukkit.getWorld(worldName) : null;
+        if (world == null) {
+            return;
+        }
+        boardLocation = new Location(world, plugin.getConfig().getDouble("startstones.board.x"),
+                plugin.getConfig().getDouble("startstones.board.y"), plugin.getConfig().getDouble("startstones.board.z"));
+    }
+
+    private void setBoardLocation(Location location) {
+        boardLocation = location;
+        plugin.getConfig().set("startstones.board.world", location.getWorld().getName());
+        plugin.getConfig().set("startstones.board.x", location.getX());
+        plugin.getConfig().set("startstones.board.y", location.getY());
+        plugin.getConfig().set("startstones.board.z", location.getZ());
+        plugin.saveConfig();
+    }
+
+    /**
+     * Start-Steine aus Versionen ohne gespeicherte Tafel-Position: die
+     * Position aus dem 2x1-Schild ableiten, sobald dessen Chunk geladen ist
+     * (gleiche Geometrie wie {@link #placeStartStonesAt}).
+     */
+    @EventHandler
+    public void onChunkLoad(ChunkLoadEvent event) {
+        if (boardLocation == null) {
+            findBoardLocationIn(event.getChunk());
+        }
+    }
+
+    /** Fuer bereits beim Plugin-Start geladene Chunks, siehe BuildContestPlugin#onEnable. */
+    public void findBoardLocationInLoadedChunks() {
+        for (World world : Bukkit.getWorlds()) {
+            for (Chunk chunk : world.getLoadedChunks()) {
+                if (boardLocation != null) {
+                    return;
+                }
+                findBoardLocationIn(chunk);
+            }
+        }
+    }
+
+    private void findBoardLocationIn(Chunk chunk) {
+        for (BlockState state : chunk.getTileEntities()) {
+            if (state instanceof Sign sign && Preset.TWO_BY_ONE.label.equals(
+                    sign.getPersistentDataContainer().get(startStoneKey, PersistentDataType.STRING))) {
+                setBoardLocation(new Location(chunk.getWorld(), sign.getX() + (Preset.values().length - 1) / 2.0,
+                        sign.getY() + 1.5, sign.getZ()));
+                plugin.getLogger().info("Position der Statustafel aus den Start-Steinen übernommen.");
+                return;
+            }
+        }
     }
 
     private void spawnStatusBoard() {
@@ -480,7 +544,7 @@ public final class AutomodeManager implements Listener {
             entity.setBillboard(Display.Billboard.CENTER);
             entity.setPersistent(false);
         });
-        showIdleStatus();
+        refreshBoard();
     }
 
     private void removeBoard() {
@@ -492,34 +556,67 @@ public final class AutomodeManager implements Listener {
 
     /** Siehe rules.md#schnellstart-presets-und-start-steine: Anzeige muss den aktuellen Status zeigen. Vom Contest-Ende aufgerufen. */
     public void showIdleStatus() {
-        if (board == null) {
-            return;
-        }
-        board.setText(ChatColor.BOLD + "Buildcontest\n" + ChatColor.GREEN + "Bereit - Start-Stein benutzen!");
+        refreshBoard();
     }
 
-    private void showRunningStatus() {
-        if (board == null) {
+    private void refreshBoard() {
+        if (boardLocation == null) {
             return;
         }
-        board.setText(ChatColor.BOLD + "Buildcontest\n" + ChatColor.RED + "Contest läuft - bitte warten");
-    }
-
-    private void updateBoard() {
-        if (board == null) {
-            return;
-        }
-        StringBuilder text = new StringBuilder(ChatColor.BOLD + "Team-Übersicht\n");
-        for (Group group : groupManager.getGroups().values()) {
-            text.append(group.getColor()).append(ChatColor.BOLD).append(group.getName())
-                    .append(ChatColor.RESET).append(group.getColor())
-                    .append(" (").append(group.getMembers().size()).append('/').append(group.getMaxSize())
-                    .append(")\n");
-            for (UUID memberId : group.getMembers()) {
-                String name = Bukkit.getOfflinePlayer(memberId).getName();
-                text.append(group.getColor()).append(name != null ? name : "?").append('\n');
+        if (board == null || !board.isValid()) {
+            World world = boardLocation.getWorld();
+            if (world == null || !world.isChunkLoaded(boardLocation.getBlockX() >> 4, boardLocation.getBlockZ() >> 4)) {
+                return;
             }
+            spawnStatusBoard();
+            return;
         }
-        board.setText(text.toString());
+        board.setText(String.join("\n", statusLines()));
+    }
+
+    /** Aktueller Contest-Status fuer die Tafel in der Eingangswelt und {@code /bc status}. */
+    public List<String> statusLines() {
+        List<String> lines = new ArrayList<>();
+        if (waiting) {
+            lines.add(ChatColor.BOLD + "Team-Übersicht");
+            for (Group group : groupManager.getGroups().values()) {
+                lines.add(group.getColor() + "" + ChatColor.BOLD + group.getName() + ChatColor.RESET + group.getColor()
+                        + " (" + group.getMembers().size() + "/" + group.getMaxSize() + ")");
+                for (UUID memberId : group.getMembers()) {
+                    String name = Bukkit.getOfflinePlayer(memberId).getName();
+                    lines.add(group.getColor() + (name != null ? name : "?"));
+                }
+            }
+            return lines;
+        }
+
+        lines.add(ChatColor.BOLD + "Buildcontest");
+        if (command != null && command.isVoteActive()) {
+            lines.add(ChatColor.YELLOW + "Abstimmung läuft - noch " + plugin.getVoteManager().getSecondsLeft() + " s");
+            return lines;
+        }
+        if (!gameStateManager.isRunning()) {
+            lines.add(ChatColor.GREEN + "Bereit - Start-Stein benutzen!");
+            return lines;
+        }
+
+        lines.add(gameStateManager.isPaused() ? ChatColor.YELLOW + "Pausiert" : ChatColor.RED + "Contest läuft");
+        long remainingMillis = gameStateManager.getRemainingMillis();
+        String time;
+        if (remainingMillis < 0) {
+            time = "ohne Zeitlimit";
+        } else {
+            long remainingSeconds = (remainingMillis + 999) / 1000;
+            time = String.format("noch %d:%02d", remainingSeconds / 60, remainingSeconds % 60);
+        }
+        lines.add(ChatColor.WHITE + time + ChatColor.GRAY + " | "
+                + (gameStateManager.isPvpEnabled() ? ChatColor.RED + "PvP an" : ChatColor.GREEN + "PvP aus"));
+        for (Group group : groupManager.getGroups().values()) {
+            long online = group.getMembers().stream().filter(id -> Bukkit.getPlayer(id) != null).count();
+            lines.add(group.getColor() + "" + ChatColor.BOLD + group.getName() + ChatColor.RESET + group.getColor()
+                    + ": " + group.getMembers().size() + " Spieler (" + online + " online), "
+                    + plugin.getScoreManager().getGroupScore(group.getId()) + " Punkte");
+        }
+        return lines;
     }
 }

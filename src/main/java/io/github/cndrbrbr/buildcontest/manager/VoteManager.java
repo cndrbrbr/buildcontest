@@ -50,6 +50,10 @@ public final class VoteManager implements Listener {
         return onDone != null;
     }
 
+    public int getSecondsLeft() {
+        return secondsLeft;
+    }
+
     /** Startet die Abstimmung; {@code onDone} wird mit dem Ergebnis aufgerufen. */
     public void start(Consumer<Result> onDone) {
         cancel();

@@ -38,7 +38,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private static final List<String> SUBCOMMANDS = List.of(
             "join", "setgroups", "setgroupsize", "setplotsize",
             "setdistance", "setscore", "assign", "start", "pause", "resume", "end", "deleteworld", "automode",
-            "placestartstones", "reload", "vote");
+            "placestartstones", "reload", "vote", "status");
 
     private final BuildContestPlugin plugin;
     private final MainConfig mainConfig;
@@ -97,6 +97,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
             case "start" -> requireAdmin(sender)
                     && handleStartWithVote(sender, args.length > 1 && "confirm".equalsIgnoreCase(args[1]));
             case "vote" -> handleVote(sender, args);
+            case "status" -> handleStatus(sender);
             case "pause" -> requireAdmin(sender) && handlePause(sender);
             case "resume" -> requireAdmin(sender) && handleResume(sender);
             case "end" -> requireAdmin(sender) && handleEnd(sender);
@@ -561,6 +562,12 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
         }
         plotManager.clear(groupManager);
         sender.sendMessage("§aBauplatz-Welt gelöscht.");
+        return true;
+    }
+
+    /** Gleicher Inhalt wie die Statustafel in der Eingangswelt, siehe AutomodeManager#statusLines. */
+    private boolean handleStatus(CommandSender sender) {
+        automodeManager.statusLines().forEach(sender::sendMessage);
         return true;
     }
 
