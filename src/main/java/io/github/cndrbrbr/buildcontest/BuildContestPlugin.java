@@ -102,6 +102,7 @@ public final class BuildContestPlugin extends JavaPlugin {
         automodeManager.placeStartStonesIfMissing();
         automodeManager.findBoardLocationInLoadedChunks();
         topPlacersBoard = new TopPlacersBoard(this, automodeManager);
+        getServer().getPluginManager().registerEvents(topPlacersBoard, this);
 
         getLogger().info("Buildcontest aktiviert.");
     }
@@ -114,6 +115,9 @@ public final class BuildContestPlugin extends JavaPlugin {
         }
         if (dataStore != null) {
             dataStore.save();
+        }
+        if (topPlacersBoard != null) {
+            topPlacersBoard.save();
         }
         if (scoreboardManager != null) {
             scoreboardManager.clearAll();

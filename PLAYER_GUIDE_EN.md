@@ -40,7 +40,7 @@ later are put into the smaller team.
 world, you can start a contest yourself by right-clicking it, even when no admin is around! A
 status display next to the stones shows whether a contest is already running (if so, wait until
 it is over), with the remaining time and how many players are in each team. `/bc status` shows the
-same in chat. Next to it glows the top 30 of players who placed the most blocks in total (`/bc top`).
+same in chat. Next to it glows the top 30 of players who placed the most blocks in contests (`/bc top`).
 
 ## Vote before the start
 

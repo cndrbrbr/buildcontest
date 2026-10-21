@@ -43,7 +43,7 @@ später dazukommt, landet im kleineren Team.
 Wie lange der Contest dauert, entscheidet ihr in der Abstimmung (siehe unten). Eine Statusanzeige neben
 den Steinen zeigt, ob gerade schon ein Contest läuft (dann warten, bis er vorbei ist) – mit Restzeit
 und wie viele Spieler in welchem Team sind. Dasselbe zeigt `/bc status` im Chat. Daneben leuchtet die
-Top 30 der Spieler, die insgesamt die meisten Blöcke gesetzt haben (`/bc top`).
+Top 30 der Spieler, die in Contests die meisten Blöcke gesetzt haben (`/bc top`).
 
 ## Eingangswelt, Contest und Inventar
 
