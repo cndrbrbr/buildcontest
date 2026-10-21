@@ -16,6 +16,7 @@ import io.github.cndrbrbr.buildcontest.manager.InventoryVaultManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
+import io.github.cndrbrbr.buildcontest.manager.TopPlacersBoard;
 import io.github.cndrbrbr.buildcontest.manager.VoteManager;
 import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.persistence.DataStore;
@@ -38,6 +39,7 @@ public final class BuildContestPlugin extends JavaPlugin {
     private InventoryVaultManager inventoryVaultManager;
     private DataStore dataStore;
     private VoteManager voteManager;
+    private TopPlacersBoard topPlacersBoard;
     private BukkitTask autosaveTask;
 
     @Override
@@ -99,6 +101,7 @@ public final class BuildContestPlugin extends JavaPlugin {
         // Weltspawn der Eingangswelt aufstellen, falls noch nie passiert.
         automodeManager.placeStartStonesIfMissing();
         automodeManager.findBoardLocationInLoadedChunks();
+        topPlacersBoard = new TopPlacersBoard(this, automodeManager);
 
         getLogger().info("Buildcontest aktiviert.");
     }
@@ -139,6 +142,10 @@ public final class BuildContestPlugin extends JavaPlugin {
 
     public VoteManager getVoteManager() {
         return voteManager;
+    }
+
+    public TopPlacersBoard getTopPlacersBoard() {
+        return topPlacersBoard;
     }
 
     public MainConfig getMainConfig() {

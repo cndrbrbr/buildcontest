@@ -475,6 +475,10 @@ public final class AutomodeManager implements Listener {
         return true;
     }
 
+    public Location getBoardLocation() {
+        return boardLocation;
+    }
+
     /** Gespeicherte Tafel-Position aus config.yml (startstones.board), siehe {@link #setBoardLocation}. */
     private void loadBoardLocation() {
         String worldName = plugin.getConfig().getString("startstones.board.world");

@@ -185,7 +185,9 @@ die Teamwahl, die laufende Abstimmung oder "Contest läuft" mit Restzeit, PvP un
 (davon online) und Punkten; währenddessen lösen die Steine keinen weiteren Contest aus. `/bc end`
 setzt die Anzeige zurück, auch bei natürlichem Zeitablauf (nicht nur bei explizitem `/bc end`).
 Die Anzeige erscheint nach Serverneustarts automatisch wieder (Position in config.yml unter
-`startstones.board`); denselben Inhalt liefert `/bc status` im Chat.
+`startstones.board`); denselben Inhalt liefert `/bc status` im Chat. Daneben steht eine leuchtende
+Top-30-Tafel der insgesamt gesetzten Blöcke (Vanilla-Statistik "benutzt", nur Block-Items, minütlich
+aktualisiert, Position per `/bc placetoplist` → config.yml `toplist`; im Chat `/bc top`).
 
 ### Eingangswelt, Contest-Welt und Inventar
 
@@ -227,6 +229,8 @@ spielentscheidenden Einstellungen lassen sich erst nach `/bc end` wieder ändern
 |---|---|
 | `/bc join <gruppe>` | (Spieler) Im `FREE`-Modus einer Gruppe beitreten |
 | `/bc status` | (Spieler) Zeigt, ob ein Contest läuft – Restzeit, PvP, Spieler und Punkte je Team |
+| `/bc top` | (Spieler) Top 30 der Spieler mit den meisten insgesamt gesetzten Blöcken |
+| `/bc placetoplist` | Leuchtende Top-30-Tafel an der eigenen Position aufstellen (Standard: rechts neben den Start-Steinen) |
 | `/bc vote pvp <ja\|nein>` | (Spieler) In der Abstimmung vor dem Start für/gegen PvP stimmen |
 | `/bc vote zeit <15\|30\|45\|60>` | (Spieler) Für eine Spieldauer in Minuten stimmen |
 | `/bc setgroups <n>` | Anzahl der Gruppen festlegen (bestehende Mitgliedschaften gehen verloren) |

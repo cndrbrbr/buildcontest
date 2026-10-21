@@ -11,6 +11,7 @@ import io.github.cndrbrbr.buildcontest.manager.InventoryVaultManager;
 import io.github.cndrbrbr.buildcontest.manager.PlotManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreManager;
 import io.github.cndrbrbr.buildcontest.manager.ScoreboardManager;
+import io.github.cndrbrbr.buildcontest.manager.TopPlacersBoard;
 import io.github.cndrbrbr.buildcontest.manager.VoteManager;
 import io.github.cndrbrbr.buildcontest.manager.WorldManager;
 import io.github.cndrbrbr.buildcontest.model.Group;
@@ -38,7 +39,7 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     private static final List<String> SUBCOMMANDS = List.of(
             "join", "setgroups", "setgroupsize", "setplotsize",
             "setdistance", "setscore", "assign", "start", "pause", "resume", "end", "deleteworld", "automode",
-            "placestartstones", "reload", "vote", "status");
+            "placestartstones", "placetoplist", "reload", "vote", "status", "top");
 
     private final BuildContestPlugin plugin;
     private final MainConfig mainConfig;
@@ -98,12 +99,14 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
                     && handleStartWithVote(sender, args.length > 1 && "confirm".equalsIgnoreCase(args[1]));
             case "vote" -> handleVote(sender, args);
             case "status" -> handleStatus(sender);
+            case "top" -> handleTop(sender);
             case "pause" -> requireAdmin(sender) && handlePause(sender);
             case "resume" -> requireAdmin(sender) && handleResume(sender);
             case "end" -> requireAdmin(sender) && handleEnd(sender);
             case "deleteworld" -> requireAdmin(sender) && handleDeleteWorld(sender);
             case "automode" -> requireAdmin(sender) && requireNotRunning(sender) && handleAutomode(sender, args);
             case "placestartstones" -> requireAdmin(sender) && handlePlaceStartStones(sender);
+            case "placetoplist" -> requireAdmin(sender) && handlePlaceTopList(sender);
             case "reload" -> requireAdmin(sender) && handleReload(sender);
             default -> {
                 sender.sendMessage("§cUnbekannter Unterbefehl: " + sub);
@@ -568,6 +571,22 @@ public final class BuildContestCommand implements CommandExecutor, TabCompleter 
     /** Gleicher Inhalt wie die Statustafel in der Eingangswelt, siehe AutomodeManager#statusLines. */
     private boolean handleStatus(CommandSender sender) {
         automodeManager.statusLines().forEach(sender::sendMessage);
+        return true;
+    }
+
+    /** Gleicher Inhalt wie die Top-30-Tafel, siehe TopPlacersBoard. */
+    private boolean handleTop(CommandSender sender) {
+        plugin.getTopPlacersBoard().lines().forEach(sender::sendMessage);
+        return true;
+    }
+
+    private boolean handlePlaceTopList(CommandSender sender) {
+        if (!(sender instanceof Player admin)) {
+            sender.sendMessage("§cNur als Spieler ausführbar (braucht eine Position in der Eingangswelt).");
+            return true;
+        }
+        plugin.getTopPlacersBoard().placeAt(admin.getLocation());
+        sender.sendMessage("§aTop-" + TopPlacersBoard.SIZE + "-Tafel hier aufgestellt.");
         return true;
     }
 

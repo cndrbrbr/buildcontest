@@ -179,7 +179,9 @@ team selection, the running vote or "Contest läuft" (contest running) with rema
 per team the number of players (online) and points; while a contest runs, the stones do not
 trigger another one. The display is reset when the contest ends, both on `/bc end` and when the
 time runs out. It reappears automatically after server restarts (position stored in config.yml
-under `startstones.board`); `/bc status` shows the same content in chat.
+under `startstones.board`); `/bc status` shows the same content in chat. Next to it a glowing top 30
+board lists total blocks placed per player (vanilla "used" statistic, block items only, refreshed
+every minute, position via `/bc placetoplist` → config.yml `toplist`; in chat `/bc top`).
 
 ### Lobby world, contest world and inventory
 
@@ -220,6 +222,8 @@ time (team changes by an admin are explicitly permitted).
 |---|---|
 | `/bc join <team>` | (Player) Join a team in `FREE` mode |
 | `/bc status` | (Player) Show whether a contest is running – remaining time, PvP, players and points per team |
+| `/bc top` | (Player) Top 30 players by total blocks placed |
+| `/bc placetoplist` | Place the glowing top 30 board at your position (default: right of the start stones) |
 | `/bc vote pvp <ja\|nein>` | (Player) Vote for PvP yes/no during the pre-start vote |
 | `/bc vote zeit <15\|30\|45\|60>` | (Player) Vote for the contest duration in minutes |
 | `/bc setgroups <n>` | Set the number of teams (existing memberships are lost) |
